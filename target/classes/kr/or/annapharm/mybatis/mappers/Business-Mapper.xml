@@ -1,0 +1,571 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Business-Mapper">  
+	<select id="selectSearchMedicine" resultType="kr.or.annapharm.dto.SearchMedicineVO">
+		select
+			 a.md_name as md_name
+			,a.md_component as md_component
+			,a.md_class as md_class
+			,substr(b.mi_name,instr(b.mi_name,'_' )+1) as unit
+			,b.mi_maincode as mi_maincode
+		  from medicine a, medicine_info b
+		 where a.mi_code = b.mi_code
+		   and a.md_name like '%'||#{keyword}||'%'
+	</select>
+	
+	<select id="selectSearchMedicineCount" resultType="int">
+		select count(*)
+		from medicine
+		where md_name like '%'||#{keyword}||'%'
+	</select>
+	
+	<select id="selectSearchBasis" resultType="kr.or.annapharm.dto.SearchMedicineVO">
+		select
+		distinct a.md_component as md_component
+		,b.mi_type
+		,a.md_class as md_class
+		,substr(b.mi_name,instr(b.mi_name,'_' )+1) as unit
+		,b.mi_maincode as mi_maincode
+		,b.mi_use
+		from medicine a, medicine_info b
+		where a.mi_code = b.mi_code
+		and a.md_component like '%'||#{keyword}||'%'
+	</select>
+	
+	<select id="selectSearchBasisCount" resultType="int">
+		select count(*)
+		from (
+		select
+		distinct a.md_component as md_component
+		,b.mi_type
+		,a.md_class as md_class
+		,substr(b.mi_name,instr(b.mi_name,'_' )+1) as unit
+		,b.mi_maincode as mi_maincode
+		from medicine a, medicine_info b
+		where a.mi_code = b.mi_code
+		and a.md_component like '%'||#{keyword}||'%'
+		)
+	</select>
+	
+	<select id="selectCompareMedicine" resultType="kr.or.annapharm.dto.CompareMedicineVO">
+		select
+		 a.md_no
+		,a.md_name
+		,b.mi_company
+		,a.md_class
+		,b.mi_price
+		from medicine a, medicine_info b
+		where a.mi_code = b.mi_code
+		and b.mi_maincode = #{miMaincode}
+		order by b.mi_price
+	</select>
+	
+	<update id="insertSelectList" parameterType="kr.or.annapharm.dto.SelectListVO">
+		insert into select_list(md_no,chemist_code) 
+		values(#{mdNo},#{chemistCode})
+	</update>
+	
+	<delete id="deleteSelectList" parameterType="kr.or.annapharm.dto.SelectListVO">
+		delete from select_list 
+		where md_no = #{mdNo}
+		and chemist_code = #{chemistCode}
+	</delete>
+	
+	<select id="selectSelectList" resultType="kr.or.annapharm.dto.SelectListVO">
+		select
+		 a.md_no
+		,c.chemist_code 
+		,a.md_name
+		,b.mi_company
+		,a.md_class
+		,b.mi_price
+		,b.mi_unit
+		,b.mi_code
+		from medicine a, medicine_info b, select_list c
+		where a.mi_code = b.mi_code
+		and a.md_no = c.md_no
+		and c.chemist_code = #{chemistCode}
+	</select>
+	
+	<select id="salesByAgeList" resultType="kr.or.annapharm.dto.SalesByAgeVO">
+		select
+		   z.age
+		  ,z.sex
+		  ,nvl(y.price,0) price
+		  ,nvl(y.count,0) count
+		  ,nvl(y.biprice,0) biprice
+		  ,nvl(y.bicount,0) bicount
+		  ,nvl( (price + biprice),0) totalprice
+		  ,nvl( (count + bicount),0) totalcount
+		from
+		   (
+		      select
+		         a.age
+		        ,b.sex
+		      from
+		         (
+		            select
+		               (level-1) * 10 age
+		            from
+		               dual
+		            connect by
+		               <![CDATA[level < 10]]>
+		         ) a
+		        , (
+		            select
+		               '남성' sex
+		            from
+		               dual
+		            union all
+		            select
+		               '여성' sex
+		            from
+		               dual
+		         ) b
+		   ) z
+		  , (
+		      select
+		         age
+		        ,sex
+		        ,sum(cheobangprice) as price
+		        ,sum(cheobangcount) as count
+		        ,sum(bicheobangprice) as biprice
+		        ,sum(bicheobangcount) as bicount
+		      from
+		         (
+		            select
+		               trunc(to_number(to_char(sysdate,'yyyy') + 1 - (substr(c.patient_regnum,0,2) + (
+		                  case
+		                      <![CDATA[when substr(c.patient_regnum,8,1) < 3  then 1900
+		                     when substr(c.patient_regnum,8,1) >= 3 then 2000]]>
+		                  end
+		               ) ) ) / 10) * 10 as age
+		              , (
+		                  case
+		                     when substr(c.patient_regnum,8,1) = '1'
+		                          or substr(c.patient_regnum,8,1) = '3' then '남성'
+		                     else '여성'
+		                  end
+		               ) as sex
+		              ,nvl(d.sumprice,0) as cheobangprice
+		              ,nvl(d.count,0) as cheobangcount
+		              ,nvl(e.sumprice,0) as bicheobangprice
+		              ,nvl(e.count,0) as bicheobangcount
+		            from
+		               patient c
+		               left outer join (
+		                  select
+		                     a.patient_code
+		                    ,sum(a.sale_price) as sumprice
+		                    ,count(a.sale_price) as count
+		                  from
+		                     sale a
+		                    ,prescription b
+		                  where
+		                     a.ps_code = b.ps_code
+		                     and   b.ps_type = '처방'
+		                     and   a.sale_date between to_date(#{startDate}) and to_date(#{endDate}) + 1
+		                  group by
+		                     a.patient_code
+		               ) d on c.patient_code = d.patient_code
+		               left outer join (
+		                  select
+		                     a.patient_code
+		                    ,sum(a.sale_price) as sumprice
+		                    ,count(a.sale_price) as count
+		                  from
+		                     sale a
+		                    ,prescription b
+		                  where
+		                     a.ps_code = b.ps_code
+		                     and   b.ps_type = '비처방'
+		                     and   a.sale_date between to_date(#{startDate}) and to_date(#{endDate}) + 1
+		                  group by
+		                     a.patient_code
+		               ) e on c.patient_code = e.patient_code
+		         )
+		      group by
+		         age
+		        ,sex
+		   ) y
+		where
+		   z.age = y.age (+)
+		   and   z.sex = y.sex (+)
+		<if test="searchType != null">
+			order by ${searchType} ${searchType2}	
+		</if>
+		<if test="searchType == null">
+			order by totalcount desc	
+		</if>
+	</select>
+	
+	<sql id="mdClass">
+		<if test="mdClass == 'ALL'.toString()">
+			 and (f.md_class like '%'||'전문'||'%'
+			 or
+			 f.md_class like '%'||'일반'||'%'
+			 or
+			 f.md_class like '%'||'건강기능식품'||'%')	
+		</if>
+		<if test="mdClass == 'ETC'.toString()">
+			 and f.md_class like '%'||'전문'||'%'	
+		</if>
+		<if test="mdClass == 'OTC'.toString()">
+			 and f.md_class like '%'||'일반'||'%'		
+		</if>
+		<if test="mdClass == 'HTC'.toString()">
+			 and f.md_class like '%'||'건강기능식품'||'%'		
+		</if>
+	</sql>
+	
+	<sql id="miCompany">
+		<if test="miCompany != ''">
+        	  and g.mi_company like '%'||#{miCompany}||'%'	
+        </if>      
+	</sql>
+	
+	<select id="preferMedicineList" resultType="kr.or.annapharm.dto.PreferMedicineVO">
+			select
+				a.age
+				,a.sex
+				,a.md_name
+				,a.mi_company
+				,a.md_class
+				,a.num
+				,a.price
+				,a.md_no
+				,nvl(p.num,0) as ownnum
+			from
+			  (select c.age
+			        ,c.sex
+			        ,e.md_no
+			        ,f.md_name
+			        ,f.md_class
+			        ,g.mi_company
+			        ,g.mi_price as price
+			        ,sum(e.sale_cart_num) as num
+			      from
+			        (select
+			            trunc(to_number(to_char(sysdate,'yyyy') + 1 - (substr(patient_regnum,0,2) + (
+			               case
+			                  <![CDATA[when substr(patient_regnum,8,1) < 3  then 1900
+		                     when substr(patient_regnum,8,1) >= 3 then 2000]]>
+			               end
+			            ) ) ) / 10) * 10 as age
+			           , (
+			               case
+			                  when substr(patient_regnum,8,1) = '1'
+			                       or substr(patient_regnum,8,1) = '3' then '남성'
+			                  else '여성'
+			               end
+			            ) as sex
+			            , patient_code
+			      from patient) c
+			        ,sale d
+			        ,sale_cart e
+			        ,medicine f
+			        ,medicine_info g
+			      where
+			         c.patient_code = d.patient_code
+			         and f.mi_code = g.mi_code
+			         and f.md_no = e.md_no
+			         and d.sale_date between to_date(#{startDate}) and to_date(#{endDate})
+			         and d.sale_no = e.sale_no
+			         <include refid="mdClass"/>
+			         <include refid="miCompany"/> 
+			         and c.age = ${age}
+			         and c.sex = #{sex}
+			    group by e.md_no,f.md_class,g.mi_company,f.md_name,c.age,c.sex,g.mi_price ) a
+			   ,
+			  (select md_no
+			   ,sum(product_ownnum) as num
+			   from product
+			   group by md_no)p
+			  where p.md_no(+) = a.md_no 
+			  order by a.num desc	
+	</select>
+	
+	<select id="preferMedicineCount" resultType="int">
+<!-- 		select count(*)  -->
+<!-- 		from( -->
+<!-- 		   select -->
+<!-- 		            trunc(to_number(to_char(sysdate,'yyyy') + 1 - (substr(patient_regnum,0,2) + ( -->
+<!-- 		               case -->
+<!-- 		                 <![CDATA[when substr(patient_regnum,8,1) < 3  then 1900 -->
+<!-- 		                     when substr(patient_regnum,8,1) >= 3 then 2000]]> -->
+<!-- 		               end -->
+<!-- 		            ) ) ) / 10) * 10 as age -->
+<!-- 		           , ( -->
+<!-- 		               case -->
+<!-- 		                  when substr(patient_regnum,8,1) = '1' -->
+<!-- 		                    or substr(patient_regnum,8,1) = '3' then '남성' -->
+<!-- 		                  else '여성' -->
+<!-- 		               end -->
+<!-- 		            ) as sex -->
+<!-- 		            , patient_code -->
+<!-- 		      from patient) a, sale b, sale_cart c -->
+<!-- 		where a.patient_code = b.patient_code -->
+<!-- 		and b.sale_no = c.sale_no -->
+<!-- 		and a.age = ${age} -->
+<!-- 		and a.sex = #{sex} -->
+		
+		select count(*) from 
+		(select
+				a.age
+				,a.sex
+				,a.md_name
+				,a.mi_company
+				,a.md_class
+				,a.num
+				,a.price
+				,nvl(p.num,0) as ownnum
+			from
+			  (select c.age
+			        ,c.sex
+			        ,e.md_no
+			        ,f.md_name
+			        ,f.md_class
+			        ,g.mi_company
+			        ,g.mi_price as price
+			        ,sum(e.sale_cart_num) as num
+			      from
+			        (select
+			            trunc(to_number(to_char(sysdate,'yyyy') + 1 - (substr(patient_regnum,0,2) + (
+			               case
+			                  <![CDATA[when substr(patient_regnum,8,1) < 3  then 1900
+		                     when substr(patient_regnum,8,1) >= 3 then 2000]]>
+			               end
+			            ) ) ) / 10) * 10 as age
+			           , (
+			               case
+			                  when substr(patient_regnum,8,1) = '1'
+			                       or substr(patient_regnum,8,1) = '3' then '남성'
+			                  else '여성'
+			               end
+			            ) as sex
+			            , patient_code
+			      from patient) c
+			        ,sale d
+			        ,sale_cart e
+			        ,medicine f
+			        ,medicine_info g
+			      where
+			         c.patient_code = d.patient_code
+			         and f.mi_code = g.mi_code
+			         and f.md_no = e.md_no
+			         and d.sale_date between to_date(#{startDate}) and to_date(#{endDate})
+			         and d.sale_no = e.sale_no
+			         <include refid="mdClass"/>
+			         <include refid="miCompany"/> 
+			         and c.age = ${age}
+			         and c.sex = #{sex}
+			    group by e.md_no,f.md_class,g.mi_company,f.md_name,c.age,c.sex,g.mi_price ) a
+			   ,
+			  (select md_no
+			   ,sum(product_ownnum) as num
+			   from product
+			   group by md_no)p
+			  where p.md_no(+) = a.md_no 
+			  order by a.num desc)	
+	</select>	
+	
+	<select id="longPrescription" resultType="kr.or.annapharm.dto.LongPrescriptionVO">
+		select a.ps_code,a.ps_complete_date,d.patient_name,a.pre_drug_day,b.hospital_name,b.doctor_name,c.chemist_name 
+		  from (select ps_code,patient_code,ps_complete_date,doctor_code,chemist_code,pre_drug_day
+		              ,rank() over (partition by patient_code order by to_char(ps_complete_date,'yyyymmdd') desc) as rnk
+		          from (select a.ps_code, a.patient_code
+		                     , a.ps_complete_date, a.doctor_code
+		                     , a.chemist_code, b.pre_drug_day, a.ps_type
+		                  from prescription a, pre_drug b
+		                 where a.ps_code = b.ps_code
+		                   <![CDATA[and b.pre_drug_day >=]]> ${preDrugDay}
+		                   <![CDATA[and b.pre_drug_day <]]> ${preDrugDay} + 30
+		                 group by a.ps_code, a.patient_code
+		                     , a.ps_complete_date, a.doctor_code
+		                     , a.chemist_code, b.pre_drug_day, a.ps_type)
+		         where ps_type = '처방'
+		           and ps_complete_date is not null)a
+		      ,(select mem.mem_name as doctor_name
+		             , doc.doctor_code, doc.hospital_name
+		          from member mem, doctor doc
+		         where mem.mem_id = doc.mem_id) b
+		      ,(select mem.mem_name as chemist_name
+		             , che.chemist_code
+		             , pi.pi_hpid as pharmacy_code
+		          from member mem, chemist che, pharmacy_info pi
+		         where mem.mem_id = che.mem_id
+		           and pi.pi_hpid = che.pharmacy_code
+		           and pi.pi_hpid = #{piHpid}) c
+		      , patient d   
+		 where a.chemist_code = c.chemist_code
+		   and a.doctor_code = b.doctor_code
+		   and d.patient_code = a.patient_code
+		   and rnk = 1
+	</select>
+	
+	<select id="longPrescriptionCount" resultType="int">
+		select count(*)
+		from
+		(
+		select a.ps_code,a.ps_complete_date,d.patient_name,a.pre_drug_day,b.hospital_name,b.doctor_name,c.chemist_name 
+		  from (select ps_code,patient_code,ps_complete_date,doctor_code,chemist_code,pre_drug_day
+		              ,rank() over (partition by patient_code order by to_char(ps_complete_date,'yyyymmdd') desc) as rnk
+		          from (select a.ps_code, a.patient_code
+		                     , a.ps_complete_date, a.doctor_code
+		                     , a.chemist_code, b.pre_drug_day, a.ps_type
+		                  from prescription a, pre_drug b
+		                 where a.ps_code = b.ps_code
+		                   <![CDATA[and b.pre_drug_day >=]]> ${preDrugDay}
+		                   <![CDATA[and b.pre_drug_day <]]> ${preDrugDay} + 30
+		                 group by a.ps_code, a.patient_code
+		                     , a.ps_complete_date, a.doctor_code
+		                     , a.chemist_code, b.pre_drug_day, a.ps_type)
+		         where ps_type = '처방'
+		           and ps_complete_date is not null)a
+		      ,(select mem.mem_name as doctor_name
+		             , doc.doctor_code, doc.hospital_name
+		          from member mem, doctor doc
+		         where mem.mem_id = doc.mem_id) b
+		      ,(select mem.mem_name as chemist_name
+		             , che.chemist_code
+		             , pi.pi_hpid as pharmacy_code
+		          from member mem, chemist che, pharmacy_info pi
+		         where mem.mem_id = che.mem_id
+		           and pi.pi_hpid = che.pharmacy_code
+		           and pi.pi_hpid = #{piHpid}) c
+		      , patient d   
+		 where a.chemist_code = c.chemist_code
+		   and a.doctor_code = b.doctor_code
+		   and d.patient_code = a.patient_code
+		   and rnk = 1
+		)
+	</select>
+	
+	<select id="longPrescriptionDetail" resultType="kr.or.annapharm.dto.LongPrescriptionDetailVO">
+		select ps_code,md_class,md_no,md_name,pre_drug_count,pre_drug_day,ownnum
+		     , <![CDATA[case when ownnum <= (pre_drug_num) then '부족'
+		            else '-'
+		       end as ownnum_check]]>
+		  from(select a.md_class,a.md_no,a.md_name,a.pre_drug_num,a.pre_drug_day,a.pre_drug_count
+		               ,nvl(b.product_ownnum,0) as ownnum,a.ps_code
+		         from(
+		         select c.md_class,a.md_no,c.md_name,a.pre_drug_num,a.pre_drug_day,a.pre_drug_count,a.ps_code
+		           from pre_drug a, prescription b, medicine c
+		          where a.ps_code = b.ps_code
+		            and a.md_no = c.md_no
+		            and b.ps_type = '처방'
+		            and b.ps_complete_date is not null)a, product b
+		         where a.md_no = b.md_no(+))
+		  where ps_code = #{psCode}
+	</select>
+	
+	<select id="medicineDetailTable" resultType="kr.or.annapharm.dto.MedicineDetailTableVO">
+		SELECT A.MD_NO
+		     , B.MI_NAME
+		     , A.MD_CLASS
+		     , A.MD_NATURE
+		     , A.MD_COMPONENT
+		     , B.MI_COMPANY
+		     , B.MI_PRICE
+		     , B.MI_TYPE
+		     , C.CLASS_NAME
+		     , substr(B.mi_name,instr(B.mi_name,'_' )+1) AS unit
+		  FROM MEDICINE A, MEDICINE_INFO B, CLASSFICATION C
+		 WHERE A.MI_CODE = B.MI_CODE
+		   AND C.CLASS_NO = B.MI_TYPE
+		   AND A.MD_NO = #{mdNo}
+	</select>
+	
+	<select id="pharmacyInfo" resultType="kr.or.annapharm.dto.PharmacyInfoMapVO">
+		select PI_DUTYNAME
+		    , PI_RNUM
+		    , PI_DUTYADDR
+		    , PI_DUTYTEL1
+		    , PI_DUTYTIME1C
+		    , PI_DUTYTIME1S
+		    , PI_DUTYTIME2C
+		    , PI_DUTYTIME2S
+		    , PI_DUTYTIME3C
+		    , PI_DUTYTIME3S
+		    , PI_DUTYTIME4C
+		    , PI_DUTYTIME4S
+		    , PI_DUTYTIME5C
+		    , PI_DUTYTIME5S
+		    , PI_DUTYTIME6C
+		    , PI_DUTYTIME6S
+		    , PI_DUTYTIME7C
+		    , PI_DUTYTIME7S
+		    , PI_DUTYTIME8C
+		    , PI_DUTYTIME8S
+		    , PI_HPID, PI_POSTCDN1, PI_POSTCDN2, PI_WGS84LON, PI_WGS84LAT
+		  from PHARMACY_INFO
+		 where PI_DUTYNAME like '%'||#{placeName}||'%'
+		   and PI_DUTYTEL1 like '%'||#{phone}||'%'
+	</select>
+	
+	<select id="pharmacyInfoDetail" resultType="kr.or.annapharm.dto.PharmacyInfoMapVO">
+		select PI_DUTYNAME
+		    , PI_RNUM
+		    , PI_DUTYADDR
+		    , PI_DUTYTEL1
+		    , PI_DUTYTIME1C
+		    , PI_DUTYTIME1S
+		    , PI_DUTYTIME2C
+		    , PI_DUTYTIME2S
+		    , PI_DUTYTIME3C
+		    , PI_DUTYTIME3S
+		    , PI_DUTYTIME4C
+		    , PI_DUTYTIME4S
+		    , PI_DUTYTIME5C
+		    , PI_DUTYTIME5S
+		    , PI_DUTYTIME6C
+		    , PI_DUTYTIME6S
+		    , PI_DUTYTIME7C
+		    , PI_DUTYTIME7S
+		    , PI_DUTYTIME8C
+		    , PI_DUTYTIME8S
+		    , PI_HPID, PI_POSTCDN1, PI_POSTCDN2, PI_WGS84LON, PI_WGS84LAT
+		  from PHARMACY_INFO
+		 where PI_HPID = #{piHpid}
+	</select>
+	
+	<select id="pharmacyProductInfo" resultType="kr.or.annapharm.dto.ProductVO">
+		SELECT A.OTC_NAME AS MD_NAME
+		     , NVL(B.PRODUCT_OWNNUM,0) AS PRODUCT_OWNNUM
+		  FROM OTC_MEDICINE A, PRODUCT B
+		 WHERE A.MD_NO = B.MD_NO(+)
+		   AND B.PHARMACY_CODE(+) = #{pharmacyCode}
+	</select>
+	
+	<select id="searchPharmacy" resultType="kr.or.annapharm.dto.PharmacyInfoMapVO">
+		SELECT PI_DUTYNAME, PI_RNUM, PI_DUTYADDR, PI_DUTYTEL1
+		     , PI_DUTYTIME1C, PI_DUTYTIME1S, PI_DUTYTIME2C, PI_DUTYTIME2S
+		     , PI_DUTYTIME3C, PI_DUTYTIME3S, PI_DUTYTIME4C, PI_DUTYTIME4S
+		     , PI_DUTYTIME5C, PI_DUTYTIME5S, PI_DUTYTIME6C, PI_DUTYTIME6S
+		     , PI_DUTYTIME7C, PI_DUTYTIME7S, PI_DUTYTIME8C, PI_DUTYTIME8S
+		     , PI_HPID, PI_POSTCDN1, PI_POSTCDN2, PI_WGS84LON, PI_WGS84LAT
+		  FROM PHARMACY_INFO
+		 WHERE PI_DUTYNAME LIKE '%'||#{keyword}||'%'
+		   and <![CDATA[ROWNUM <= ]]> 10
+	</select>
+	
+	<select id="goPharmacy" resultType="kr.or.annapharm.dto.PharmacyInfoMapVO">
+		SELECT PI_DUTYNAME, PI_RNUM, PI_DUTYADDR, PI_DUTYTEL1
+		     , PI_DUTYTIME1C, PI_DUTYTIME1S, PI_DUTYTIME2C, PI_DUTYTIME2S
+		     , PI_DUTYTIME3C, PI_DUTYTIME3S, PI_DUTYTIME4C, PI_DUTYTIME4S
+		     , PI_DUTYTIME5C, PI_DUTYTIME5S, PI_DUTYTIME6C, PI_DUTYTIME6S
+		     , PI_DUTYTIME7C, PI_DUTYTIME7S, PI_DUTYTIME8C, PI_DUTYTIME8S
+		     , PI_HPID, PI_POSTCDN1, PI_POSTCDN2, PI_WGS84LON, PI_WGS84LAT
+		  FROM PHARMACY_INFO
+		 WHERE PI_HPID = #{piHpid}
+	</select>
+	
+	
+	
+	
+	
+	
+</mapper>

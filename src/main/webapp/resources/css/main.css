@@ -1,0 +1,175 @@
+@charset "UTF-8";
+
+.que:first-child {
+	border-top: 1px solid black;
+}
+
+.que {
+	position: relative;
+	padding: 17px 0;
+	cursor: pointer;
+	font-size: 14px;
+	border-bottom: 1px solid #dddddd;
+	text-align: left;
+	background: #fff;
+	padding-left: 20px;
+}
+
+.que>span {
+	color: #000;
+}
+
+.title_sec01 {
+	display: inline-block;
+	float: left;
+	margin-left: 20px;
+	margin-top: 100px;
+	font-size: 30px;
+	letter-spacing: -2px;
+}
+
+#Accordion_wrap {
+	width: 50%;
+	float: left;
+	padding: 20px;
+}
+
+.que::before {
+	display: inline-block;
+	content: 'Q';
+	font-size: 14px;
+	color: #1963c5;
+	margin-right: 5px;
+}
+
+.que.on>span {
+	font-weight: bold;
+	color: #1963c5;
+}
+
+.anw {
+	display: none;
+	overflow: hidden;
+	font-size: 14px;
+	background-color: #4f89d5;
+	padding: 27px 0;
+	text-align: left;
+	padding-left: 50px;
+	color: #fff;
+}
+
+.anw::before {
+	display: inline-block;
+	content: 'A';
+	font-size: 14px;
+	font-weight: bold;
+	color: #fff;
+	margin-right: 5px;
+}
+
+input {
+	font-size: 14px !important;
+}
+
+button {
+	font-size: 14px !important;
+}
+
+body {
+	background: #0b1942 !important;
+}
+
+[class*=sidebar-dark] .brand-link {
+	
+}
+
+.nav-link_sub {
+	display: none;
+}
+
+.container_wrap0 {
+	padding: 0 100px;
+}
+
+.container {
+	
+}
+
+body:not (.sidebar-mini-md ):not (.sidebar-mini-xs ):not (.layout-top-nav
+	) .main-header {
+	margin-left: 0;
+	padding: 0;
+	margin-bottom: 0;
+	border-bottom: 1px solid #ddd;
+}
+
+body:not (.layout-fixed ) .main-sidebar {
+	top: auto;
+}
+
+body:not (.layout-fixed ) .main-sidebar {
+	position: fixed;
+	background: #fff;
+	box-shadow: 0 0px 0px rgb(255, 255, 255) !important;
+	border-right: 1px solid #ddd;
+}
+
+.elevation-3 {
+	box-shadow: 0 0px 0px rgb(255, 255, 255) !important;
+}
+
+.img-circle {
+	border-radius: 0 !important;
+}
+
+.main-footer {
+	text-align: center;
+}
+
+.navbar {
+	border-radius: 0px !important;
+}
+
+body:not (.layout-fixed ) .main-sidebar .sidebar {
+	overflow-y: auto;
+	background: #0042a5;
+	padding-top: 100px;
+	padding-bottom: 20px;
+}
+
+.brand-link {
+	padding: 30px 0px 20px 60px;
+}
+
+body:not (.sidebar-mini-md ):not (.sidebar-mini-xs ):not (.layout-top-nav
+	) .content-wrapper {
+	margin-left: 0;
+}
+
+body:not (.sidebar-mini-md ):not (.sidebar-mini-xs ):not (.layout-top-nav
+	) .main-footer {
+	margin-left: 0;
+}
+
+.last_left_wrap {
+	width: 50%;
+	height: 100%;
+	background: linear-gradient(330.8deg, #003986 23.75%, rgb(0 124 255)
+		48.61%);
+	float: left;
+	padding: 100px 80px;
+}
+
+.last_right_wrap {
+	height: 100%;
+	background: #e1ecff;
+}
+
+.section3_img1 {
+	float: left;
+}
+
+.section3_img2 {
+	float: right;
+}
+

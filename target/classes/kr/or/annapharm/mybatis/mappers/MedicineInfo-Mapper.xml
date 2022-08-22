@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="MedicineInfo-Mapper">  
+	<select id="selectMedicineInfoType" resultType="String">
+		select mi_type
+		  from medicine_info
+		 where mi_code = (select mi_code
+                            from medicine
+                           where md_no = #{mdNo}) 
+	</select>
+	
+	<select id="selectMedicineCompany" resultType="String">
+		select b.mi_company as mi_company
+		  from medicine a, medicine_info b
+		 where a.mi_code = b.mi_code
+		   and a.md_no = #{mdNo}
+	</select>
+	
+	<select id="selectMedicineUnit" resultType="String">
+		select mi_unit
+		  from medicine_info
+		 where mi_code = #{miCode} 
+	</select>
+
+
+</mapper>

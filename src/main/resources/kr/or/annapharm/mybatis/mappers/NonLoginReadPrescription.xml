@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="NonLoginReadPrescription-Mapper">
+
+	<!-- 병진 : 로그인 없이 환자의 정보를 조회하는 SQL문 -->
+	<select id="findNonLoginUser" parameterType="patient" resultType="patient">
+		SELECT
+		    patient_code		<!-- 환자코드  -->
+		   ,mem_id				<!-- 환자 아이디  -->
+		   ,patient_name		<!-- 환자 이름  -->
+		   ,patient_regnum		<!-- 환자 주민번호 -->
+		   ,patient_phone		<!-- 환자 전화번호 -->
+		   ,patient_addr		<!-- 환자 주소 -->
+		  FROM patient
+		 where patient_name = #{patientName}
+		   and substr(patient_regnum,0,6) = #{patientRegnum}
+		   and patient_phone = #{patientPhone}
+	</select>
+
+
+</mapper>
+
+

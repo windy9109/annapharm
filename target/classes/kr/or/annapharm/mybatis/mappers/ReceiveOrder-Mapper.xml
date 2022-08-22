@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ReceiveOrder-Mapper">
+	<sql id="searchReceiveDate">
+		<if test="startDate != ''">
+			and receive_date &gt;= #{startDate}
+		</if>
+	</sql>
+	
+	<sql id="endReceiveDate">
+		<if test="endDate != '' and startDate !=''">
+			and receive_date &lt;= to_date(#{endDate} + 1 ,'yyyy-mm-dd')
+		</if>
+	</sql>
+	
+	<sql id="searchOrderDate">
+		<if test="startDate != ''">
+			and order_date &gt;= #{startDate}
+		</if>
+	</sql>
+	
+	<sql id="endOrderDate">
+		<if test="endDate != '' and startDate !=''">
+			and order_date &lt;= to_date(#{endDate} + 1 ,'yyyy-mm-dd')
+		</if>
+	</sql>
+	
+	
+	<select id="selectReceiveList" resultType="receive">
+		select *
+  	      from receive
+ 		 where receive_status = 'S'
+ 		 <include refid="searchReceiveDate"/>
+ 		 <include refid="endReceiveDate"/> 
+ 		 order by receive_date desc
+	</select>
+	
+	<select id="selectOrderList" resultType="order">
+		select * 
+		  from orders
+		 where order_status = 'S' 
+		 <include refid="searchOrderDate"/>
+ 		 <include refid="endOrderDate"/>
+ 		 order by order_date desc
+	</select>
+	
+	<select id="selectReceiveCartList" resultType="receiveOrderCart">
+		  select a.receive_no 
+			     ,a.md_no
+                 ,a.receive_cart_num
+                 ,a.receive_cart_price
+                 ,a.receive_shelf_life
+                 ,b.mi_company
+                 ,b.mi_type
+                 ,b.mi_unit
+                 ,c.md_name
+                 ,c.md_term
+                 ,d.product_position
+                 ,d.product_qr
+                 ,e.receive_date
+             from receive_cart a, medicine_info b, medicine c, product d, receive e
+            where a.receive_no = #{receiveNo}
+              and a.md_no = c.md_no
+              and b.mi_code = c.mi_code
+              and a.md_no = d.md_no
+              and a.receive_no = e.receive_no
+              and a.receive_no = d.product_receive_no
+	</select>
+	
+	<select id="selectReceiveDemoCartList" resultType="receiveOrderCart">
+		  select a.receive_no 
+			    ,a.md_no
+			    ,a.receive_cart_num
+			    ,a.receive_cart_price
+			    ,a.receive_shelf_life
+                ,a.receive_cart_position
+			    ,b.mi_company
+			    ,b.mi_type
+			    ,b.mi_unit
+			    ,c.md_name
+			    ,c.md_term
+			    ,d.receive_date
+           from receive_cart a, medicine_info b, medicine c, receive d
+          where a.md_no = c.md_no
+            and b.mi_code = c.mi_code
+            and a.receive_no = d.receive_no
+            and d.receive_status = 'F'
+	</select>
+	
+	<select id="selectOrderCartList" resultType="receiveOrderCart">
+		select a.order_no
+			  ,a.md_no
+			  ,a.order_cart_num
+              ,a.order_cart_price
+              ,b.md_term
+              ,b.md_name
+              ,c.mi_company
+              ,c.mi_unit
+              ,c.mi_type
+              ,d.order_date
+		  from orders_cart a, medicine b, medicine_info c, orders d
+         where a.md_no = b.md_no
+           and b.mi_code = c.mi_code
+           and a.order_no = d.order_no
+           and a.order_no = #{orderNo} 
+	</select>
+	
+	<select id="selectOrderDemoCartList" resultType="receiveOrderCart">
+		 select a.order_no 
+			    ,a.md_no
+			    ,a.order_cart_num
+			    ,a.order_cart_price
+			    ,b.mi_company
+			    ,b.mi_type
+			    ,b.mi_unit
+			    ,c.md_name
+			    ,c.md_term
+			    ,d.order_date
+           from orders_cart a, medicine_info b, medicine c, orders d
+          where a.md_no = c.md_no
+            and b.mi_code = c.mi_code
+            and a.order_no = d.order_no
+            and d.order_status = 'F'
+	</select>
+	
+	<select id="getMaxReceiveNo" resultType="int">
+        select nvl(max(receive_no),0)
+  		  from receive
+	</select>
+	
+	<select id="getMaxOrderNo" resultType="int">
+        select nvl(max(order_no),0)
+  		  from orders
+	</select>
+	
+	<update id="insertReceive" parameterType="productCommand">
+		insert into receive
+    		values( #{receiveNo}
+            		,#{pharmacyCode}
+            		,#{loginMember}
+           			,sysdate
+           			,sysdate
+            		,'S')
+	</update>
+	
+	<update id="insertDemoReceive" parameterType="productCommand">
+		insert into receive
+    		values( #{receiveNo}
+            		,#{pharmacyCode}
+            		,#{loginMember}
+           			,sysdate
+           			,sysdate
+            		,'F')
+	</update>
+	
+	<update id="deleteDemoReceive">
+		delete receive
+ 		 where receive_status = 'F'
+	</update>
+	
+	<update id="deleteDemoReceiveCart">
+		delete receive_cart
+		 where receive_no in (select receive_no
+                       		    from receive_cart
+                               where receive_no in (select receive_no
+                                                      from receive
+                                                     where receive_status = 'F'))
+	</update>
+	
+	<update id="insertDemoOrder" parameterType="productCommand">
+		insert into orders
+    		values( #{orderNo}
+            		,#{pharmacyCode}
+            		,#{loginMember}
+           			,sysdate
+           			,sysdate
+            		,'F')
+	</update>
+	
+	<update id="deleteDemoOrder">
+		delete orders
+ 		 where order_status = 'F'
+	</update>
+	
+	<update id="deleteDemoOrderCart">
+		delete orders_cart
+		 where order_no in (select order_no
+                       		 from orders_cart
+                            where order_no in (select order_no
+                                                from orders
+                                               where order_status = 'F'))
+	</update>
+	
+	<update id="insertOrder" parameterType="productCommand">
+		insert into orders
+    		values( #{orderNo}
+            		,#{pharmacyCode}
+            		,#{loginMember}
+           			,sysdate
+           			,sysdate
+            		,'S')
+	</update>
+	
+	<update id="insertReceiveCart" parameterType="productCommand">
+		insert into receive_cart
+			values(#{receiveNo}
+			      ,#{mdNo}
+			      ,#{receiveCartNum}
+			      ,#{receiveCartPrice}
+			      ,#{receiveShelfLife}
+			      ,#{receiveCartPosition})
+	</update>
+	
+	<update id="insertOrderCart" parameterType="productCommand">
+		insert into orders_cart
+			values(#{orderNo}
+			      ,#{mdNo}
+			      ,#{orderCartNum}
+			      ,#{orderCartPrice})
+	</update>
+	
+	<update id="deleteReceive" parameterType="String">
+		delete receive
+		 where receive_no = #{receiveNo}
+	</update>
+	
+	<update id="deleteOrder" parameterType="String">
+		delete orders
+		 where order_no = #{orderNo}
+	</update>
+		
+	<update id="deleteReceiveCart" parameterType="String">
+		delete receive_cart 
+ 		 where receive_no = #{receiveNo}
+	</update>
+	
+	<update id="deleteOrderCart" parameterType="String">
+		delete orders_cart 
+ 		 where order_no = #{orderNo}
+	</update>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+	

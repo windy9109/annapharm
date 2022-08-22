@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ManagerDashBoard-Mapper">
+
+
+
+	<!-- 총회원 -->
+	<select id="allCount" resultType="string">
+		select count(*) AS allCount
+			from MEMBER
+	</select>
+	
+	
+	<!-- 지난달 대비 전체 회원수 변화 -->
+	<select id="allCountCompare" resultType="string">        
+	   SELECT (select count(*)
+		    from MEMBER)-((select count(*)
+		    from MEMBER)-
+		    (select count(*)
+		    from MEMBER 
+		    WHERE substr(TO_CHAR(MEM_REGDATE, 'yymm'),1,4) = to_char(add_months(sysdate,0), 'yymm'))) AS allCountCompare
+		    FROM DUAL
+	</select>
+	
+	
+	<!-- 약사회원 -->
+	<select id="allPharmacy" resultType="string">
+	  	select NVL(count(*),0) AS allPharmacy
+			from MEMBER 
+		group by MEM_AUTHORITY
+		HAVING MEM_AUTHORITY ='약사'
+	</select>
+
+
+	<!-- 지난달 대비 약사 회원수 변화 -->
+	<select id="allPountCompare" resultType="string">
+	   SELECT (select count(*)
+		    from MEMBER 
+		    group by MEM_AUTHORITY
+		    HAVING MEM_AUTHORITY ='약사')-((select count(*)
+		    from MEMBER 
+		    group by MEM_AUTHORITY
+		    HAVING MEM_AUTHORITY ='약사')-(
+		    select count(*)
+		    from MEMBER 
+		        WHERE substr(TO_CHAR(MEM_REGDATE, 'yymm'),1,4) = to_char(add_months(sysdate,0), 'yymm') AND MEM_AUTHORITY ='약사')) AS allPountCompare
+		    FROM DUAL
+	</select>
+	
+	
+	<!-- 의사회원 -->
+	<select id="allDoctor" resultType="string">        
+		select count(*) AS allDoctor
+			from MEMBER 
+		group by MEM_AUTHORITY
+		HAVING MEM_AUTHORITY ='의사'
+	</select>
+	
+	
+	<!-- 지난달 대비 의사 회원수 변화 -->
+	<select id="allDoctorCompare" resultType="string">
+	  	   SELECT (select count(*)
+			    from MEMBER 
+			    group by MEM_AUTHORITY
+			    HAVING MEM_AUTHORITY ='의사')-((select count(*)
+			    from MEMBER 
+			    group by MEM_AUTHORITY
+			    HAVING MEM_AUTHORITY ='의사')-(
+			    select count(*)
+			    from MEMBER 
+			        WHERE substr(TO_CHAR(MEM_REGDATE, 'yymm'),1,4) = to_char(add_months(sysdate,0), 'yymm') AND MEM_AUTHORITY ='의사')) AS allDoctorCompare
+			    FROM DUAL
+	</select>
+	
+	
+	<!-- 일반회원 -->
+	<select id="allNormal" resultType="string">
+		select count(*) AS allNormal
+			from MEMBER 
+		group by MEM_AUTHORITY
+		HAVING MEM_AUTHORITY ='일반'
+	</select>
+	
+	
+	<!-- 지난달 대비 일반 회원수 변화 -->
+	<select id="allNormalCompare" resultType="string">        
+		   SELECT (select count(*)
+		    from MEMBER 
+		    group by MEM_AUTHORITY
+		    HAVING MEM_AUTHORITY ='일반')-((select count(*)
+		    from MEMBER 
+		    group by MEM_AUTHORITY
+		    HAVING MEM_AUTHORITY ='일반')-(
+		    select count(*)
+		    from MEMBER 
+		        WHERE substr(TO_CHAR(MEM_REGDATE, 'yymm'),1,4) = to_char(add_months(sysdate,0), 'yymm') AND MEM_AUTHORITY ='일반')) AS allNormalCompare
+		    FROM DUAL
+	</select>
+	
+	<!--오늘가입한 신규회원 -->
+	<select id="newCount" resultType="string">
+	  	select count(*) AS newCount
+			from MEMBER 
+		WHERE TO_DATE(MEM_REGDATE) = TO_DATE(SYSDATE)
+	</select>
+	
+	
+	<!-- 어제대비 신규회원수 변화 -->
+	<select id="newCountCompare" resultType="string">
+	  	select (select count(*)
+	        from MEMBER 
+	        WHERE TO_DATE(MEM_REGDATE) = TO_DATE(SYSDATE))
+	        -
+	        (select count(*)
+	        from MEMBER 
+	        WHERE TO_CHAR(MEM_REGDATE, 'YYMMDD') = TO_CHAR(SYSDATE-1, 'YYMMDD')) AS newCountCompare
+		FROM DUAL
+	</select>
+	
+	
+</mapper>
+
+

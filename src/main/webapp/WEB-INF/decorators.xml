@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+
+<decorators defaultdir="/WEB-INF/decorator">
+
+	<!-- 일반사용자 화면 -->
+	<decorator name="main" page="main_decorator.jsp">
+		<!-- <pattern>/main/*</pattern> -->
+		<!-- <pattern>/index.jsp</pattern> -->
+		 <pattern>/index.do</pattern>
+
+	</decorator>
+
+	<!-- 일반사용자 마이페이지 화면 -->
+	<decorator name="mainAside" page="main_aside_decorator.jsp">
+		<pattern>/mypageIndex.do</pattern>
+	</decorator>
+
+	<!-- 전문가 사용자 화면 -->
+  	<decorator name="expert" page="expert_decorator.jsp">
+  	  	<pattern>/expert/main.do</pattern>
+  	  	<pattern>/patient/main.do</pattern>
+<!--   	<pattern>/sales_analysis/*</pattern>
+  		<pattern>/pharmacist/*</pattern>
+  		<pattern>/patient/*</pattern>
+  		<pattern>/expert/*</pattern>
+  		<pattern>/annapharmIn/*</pattern>
+  		<pattern>/expert/*/*</pattern>
+  		<pattern>/retrieve/*</pattern> -->
+  	</decorator>
+
+	<!-- 전문가 사용자 마이페이지 화면 -->
+ 	<decorator name="expertAside" page="expert_aside_decorator.jsp">
+ 		<!-- <pattern>/expertAside/*</pattern>
+ 		<pattern>/mypageDoctor/*</pattern> -->
+ 		<pattern>/expert/expertMypageMain.do</pattern>
+ 		<pattern>/patient/patientMypageMain.do</pattern>
+ 	</decorator>
+
+	<!-- 관리자 작업 화면 -->
+	<decorator name="managerAside" page="manager_aside_decorator.jsp">
+		<pattern>/manager/main.do</pattern>
+	</decorator>
+
+	<decorator name="dashboard" page="dashboard_decorator.jsp">
+		<pattern>*expertDashBoard*</pattern>
+		<pattern>*managerDashBoard*</pattern>
+	</decorator>
+
+
+	<!-- none 화면 -->
+	<decorator name="none" page="none_decorator.jsp">
+		<pattern>/*.do</pattern>
+		<pattern>/*/*.do</pattern>
+		<pattern>/*</pattern>
+		<pattern>/*/*</pattern>
+
+<!-- 		<pattern>/expert/product/*/*</pattern> -->
+<!-- 		<pattern>/expert/product/ownList</pattern>
+		<pattern>/expert/product/receiveOrder</pattern>
+		<pattern>/expert/product/receiveOrderWrite.do</pattern>
+		<pattern>/expert/product/product_detail.do</pattern>
+		<pattern>/expert/product/receive.do</pattern>
+		<pattern>/main/common/*</pattern>
+		<pattern>/main/common/*.do</pattern>
+		<pattern>/expert/viewT/*.do</pattern>메인 인클루드
+		<pattern>/manager/viewT/*.do</pattern>
+			<pattern>/main/common/index.do</pattern>
+			<pattern>/sales_analysis/*</pattern>
+  		<pattern>/pharmacist/*</pattern>
+  		<pattern>/patient/*</pattern>
+  		<pattern>/expert/*</pattern>
+  		<pattern>/annapharmIn/*</pattern>
+  		<pattern>/expert/*/*</pattern>
+  		<pattern>/retrieve/*</pattern>
+  		<pattern>/board/registForm.do</pattern> -->
+		<!-- <pattern>*.do</pattern> -->
+	</decorator>
+
+
+	<excludes>
+		<pattern>*/bill</pattern>
+		<pattern>/expert/business_management/bill/*</pattern>
+		<pattern>/resources/*</pattern>
+		<pattern>/sendSms.do</pattern>
+	</excludes>
+
+</decorators>

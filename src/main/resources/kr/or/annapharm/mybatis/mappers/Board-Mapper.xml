@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Board-Mapper">
+
+
+
+	<sql id="search">
+		<if test="searchType2 == 't'.toString()">
+			and board_title like '%'||#{keyword}||'%'
+		</if>
+		<if test="searchType2 == 'c'.toString()">
+			and board_content like '%'||#{keyword}||'%'
+		</if>
+		<if test="searchType2 == 'tc'.toString()">
+			and (
+			board_title like '%'||#{keyword}||'%'
+			or
+			board_content
+			like '%'||#{keyword}||'%'
+			)
+		</if>
+
+		<if test="searchType == 'A'.toString()">
+			and (
+			board_type = 'A'
+			or
+			board_type = 'P'
+			or
+			board_type = 'D'
+			or
+			board_type = 'T'
+			)
+		</if>
+		<if test="searchType == 'P'.toString()">
+			and board_type = 'P'
+		</if>
+		<if test="searchType == 'D'.toString()">
+			and board_type = 'D'
+		</if>
+		<if test="searchType == 'T'.toString()">
+			and board_type = 'T'
+		</if>
+	</sql>
+
+	<!-- 게시글 목록 출력 -->
+	<select id="selectSearchBoardList" resultType="board">
+		SELECT
+		board_code
+		,mem_id_manager
+		,board_title
+		,board_content
+		,board_date
+		,board_viewcount
+		,board_type
+		,board_lastdate
+		FROM
+		board
+		where board_code is not null
+		<include refid="search" />
+		order by to_number(board_code) desc
+	</select>
+	<!-- 게시글 개수 반환 -->
+	<select id="selectSearchBoardListCount" resultType="int">
+		select
+		count(*)
+		from
+		board
+		where board_code is not null
+		<include refid="search" />
+		order by to_number(board_code) desc
+	</select>
+
+	<!-- 게시글 번호로 게시글 정보 가져오기 -->
+	<select id="selectBoardByboardCode" parameterType="int" resultType="board">
+		select
+		*
+		from BOARD
+		where BOARD_CODE=#{boardCode}
+	</select>
+	<!-- 게시글 번호 생성 -->
+	<select id="selectBoardSequenceNextValue" resultType="int">
+		select board_seq.nextVal
+		from dual
+	</select>
+	<!-- 조회수 증가 -->
+	<update id="increaseViewCount" parameterType="int">
+		update BOARD
+		set BOARD_VIEWCOUNT=BOARD_VIEWCOUNT+1
+		where BOARD_CODE=#{boardCode}
+	</update>
+	<!-- 게시글 등록 -->
+	<update id="insertBoard" parameterType="board">
+		insert into
+		BOARD(BOARD_CODE,MEM_ID_MANAGER,BOARD_TITLE,BOARD_CONTENT,BOARD_TYPE)
+		values(#{boardCode},#{memIdManager},#{boardTitle},#{boardContent},#{boardType})
+	</update>
+	<!-- 게시글 수정 -->
+	<update id="updateBoard" parameterType="board">
+		update board
+		set
+		BOARD_TITLE=#{boardTitle},BOARD_CONTENT=#{boardContent}
+		where BOARD_CODE=#{boardCode}
+	</update>
+	<!-- 게시글 삭제 -->
+	<update id="deleteBoard" parameterType="int" >
+		delete
+		from Board
+		where BOARD_CODE=#{boardCode}
+	</update>
+
+
+</mapper>
+
+

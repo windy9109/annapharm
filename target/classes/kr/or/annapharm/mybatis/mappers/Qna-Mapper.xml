@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Qna-Mapper">
+	<select id="selectQnaList" resultType="kr.or.annapharm.dto.QnaVO">
+		SELECT
+		    qna_code
+		   ,mem_id_manager
+		   ,qna_title
+		   ,qna_content
+		   ,qna_reply
+		   ,qna_date
+		   ,qna_lastdate
+		FROM qna
+	</select>
+</mapper>
+
+
+

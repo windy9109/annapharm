@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Medicine-Mapper">  
+
+	<sql id="search">
+		<if test="searchType == 'ETC'.toString()">
+			and md_no in (select md_no
+                            from medicine
+                           where md_class like '%'||'전문'||'%')			
+		</if>
+		<if test="searchType == 'OTC'.toString()">
+			and md_no in (select md_no
+                            from medicine
+                           where md_class like '%'||'일반'||'%')			
+		</if>
+		
+	</sql>
+	<sql id="search2">
+		<if test="searchType2 != null">
+			and md_no in(select md_no
+                           from medicine
+                          where mi_code in(select mi_code
+                                             from medicine_info
+                                            where mi_type like '%'||#{searchType2}||'%'))			
+		</if>		
+	</sql>
+	<sql id="keyword">
+		<if test="keyword != null">
+			and md_no in (select md_no
+               				from medicine
+              			   where md_name like '%'||#{keyword}||'%')
+        </if>      
+	</sql>
+
+	<select id="selectMedicineClass" resultType="String">
+		select md_class
+		  from medicine
+		 where md_no = #{mdNo} 
+	</select>
+	
+	<select id="selectMedicineType" resultType="int">
+		select mi_code
+		  from medicine
+		 where md_no = #{mdNo}
+	</select>
+	
+	<select id="selectMedicineTerm" resultType="String">
+		select md_trem
+		  from medicine
+		 where md_no = #{mdNo} 
+	</select>
+	
+	<select id="selectMedicineName" resultType="String">
+		select md_name
+		  from medicine
+		 where md_no =#{mdNo}
+	</select>
+	
+	<select id="selectMedicineAll" resultType="kr.or.annapharm.dto.MedicineVO">
+		select
+		   md_no
+		  ,mi_code
+		  ,md_name
+		  ,md_class
+		  ,md_nature
+		  ,md_standard_code
+		  ,md_effect
+		  ,md_use
+		  ,md_attention
+		  ,md_storage
+		  ,md_term
+		  ,md_drug
+		  ,md_component
+		from
+		   medicine
+		where
+		   md_no = #{mdNo}
+	</select>
+	
+<!-- 	<select id="selectMedicineNameList" resultType="String"> -->
+<!-- 		select md_name -->
+<!-- 		  from medicine  -->
+<!-- 		 where md_no in (select md_no -->
+<!-- 		                   from pre_drug -->
+<!-- 		                  where ps_code in (select ps_code -->
+<!-- 		                                      from prescription -->
+<!-- 		                                     where patient_code = #{patient_code})) -->
+<!-- 	</select> -->
+
+	<!-- 처방전의 첫번째 약이름 구하기  -->
+	<select id="selectPrescriptionFirstMedicine" resultType="String">
+		select b.md_name
+		  from pre_drug a, medicine b
+		 where ps_code = #{psCode}
+		   and a.md_no = b.md_no
+		   and rownum = 1
+	</select>
+	
+	<!-- 하나의 처방전에 약 갯수 구하기 -->
+	<select id="selectPrescriptionMedicineCount" resultType="int">
+		select count(a.ps_code)
+	      from pre_drug a, prescription b
+	     where b.ps_code = #{psCode}
+	       and a.ps_code = b.ps_code
+	</select>
+	
+	<!-- 의사 : 약추가목록 -->
+	<select id="selectAddMedicineList" resultType="addMedicineList">
+		select substr(a.md_class,1,2) as md_class
+		     , b.mi_type
+             , a.md_no
+		     , a.mi_code
+		     , a.md_term
+		     , b.mi_use
+		     , b.mi_company
+		     , a.md_name
+		     , a.md_drug
+		     , b.mi_unit
+             , b.mi_price
+		  from medicine a, medicine_info b
+		 where a.mi_code = b.mi_code
+		   and a.md_name is not null
+		   <include refid="search"/>
+	       <include refid="search2"/>
+	       <include refid="keyword"/>
+		 order by b.mi_type asc
+	</select>
+	
+	<!-- 의사 : 약추가 목록에 약갯수 -->
+	<select id="selectAddMedicineListCount" resultType="int">
+		select count(*)
+		  from medicine a, medicine_info b
+		 where a.mi_code = b.mi_code
+		 order by b.mi_type asc
+	</select>
+	
+	<delete id="deleteSelectList" parameterType="kr.or.annapharm.dto.SelectListVO">
+		delete from select_list 
+		where md_no = #{mdNo}
+		and chemist_code = #{chemistCode}
+	</delete>
+	
+	<!-- 헤지 : (새 처방 작성)약 추가하기 -->
+	<update id="insertNewMedicine" parameterType="updatePrescription">
+		insert into pre_drug
+	 	values (#{psCode}, #{mdNo}, #{preDrugNum}, #{preDrugDay}, #{preDrugCount})
+	</update>
+	
+	<!-- 헤지 : 약사)(비처방 작성)약 추가하기 -->
+	<update id="insertNewMedicineForChemist" parameterType="updatePrescription">
+		insert into pre_drug
+	 	values (#{psCode}, #{mdNo}, #{preDrugNum}, #{preDrugDay}, #{preDrugCount})
+	</update>
+	
+
+</mapper>
+

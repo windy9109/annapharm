@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+  <configuration>
+   <settings>
+       <!-- 자동으로 카멜케이스 규칙으로 변환 -->
+       <setting name="mapUnderscoreToCamelCase" value="true"/>
+       <!--파라미터에 null값이 있을 경우 에러 처리 -->
+       <setting name="jdbcTypeForNull" value="VARCHAR" />
+   </settings>
+
+	<typeAliases>
+		<typeAlias type="java.util.Map" alias="map" />
+
+		<typeAlias type="kr.or.annapharm.dto.ProductVO" alias="product" />
+		<typeAlias type="kr.or.annapharm.dto.ProductCommandVO" alias="productCommand" />
+		<typeAlias type="kr.or.annapharm.dto.ReceiveVO" alias="receive" />
+		<typeAlias type="kr.or.annapharm.dto.OrderVO" alias="order" />
+		<typeAlias type="kr.or.annapharm.dto.ReceiveOrderCartVO" alias="receiveOrderCart" />
+		<typeAlias type="kr.or.annapharm.dto.BoardVO" alias="board" />
+		<typeAlias type="kr.or.annapharm.dto.PrescriptionVO" alias="prescription" />
+		<typeAlias type="kr.or.annapharm.dto.ClassficationVO" alias="classfication" />
+		<typeAlias type="kr.or.annapharm.dto.MenuVO" alias="menu" />
+		<typeAlias type="kr.or.annapharm.dto.AnnapharmInVO" alias="annapharmIn" />
+		<typeAlias type="kr.or.annapharm.dto.MemberVO" alias="member" />
+		<typeAlias type="kr.or.annapharm.dto.HospitalVO" alias="hospital" />
+		<typeAlias type="kr.or.annapharm.dto.ReplyVO" alias="reply" />
+		<typeAlias type="kr.or.annapharm.dto.PrescriptionHistoryVO" alias="prescriptionHistory" />
+		<typeAlias type="kr.or.annapharm.dto.PrescriptionDetailVO" alias="prescriptionDetail" />
+		<typeAlias type="kr.or.annapharm.dto.PrescriptionCompleteVO" alias="prescriptionComplete" />
+		<typeAlias type="kr.or.annapharm.dto.PreDetailForPharmacistVO" alias="preDetailForPharmacist" />
+		<typeAlias type="kr.or.annapharm.dto.RequestPrescriptionChemistVO" alias="requestPrescription" />
+		<typeAlias type="kr.or.annapharm.dto.PrescriptionLogVO" alias="prescriptionLog" />
+		<typeAlias type="kr.or.annapharm.dto.PharmacyInfoVO" alias="pharmacy" /> <!-- 약국 -->
+		<typeAlias type="kr.or.annapharm.dto.ReadMedicineInfoVO" alias="readMedicineInfo" />
+		<typeAlias type="kr.or.annapharm.dto.MedicienBillVO" alias="medicienBill" />
+		<typeAlias type="kr.or.annapharm.dto.SalesAnalysisVO" alias="salesAnalysis" />
+		<typeAlias type="kr.or.annapharm.dto.MedicienCalculatVO" alias="MedicienCalculat" />
+		<typeAlias type="kr.or.annapharm.dto.RetrieveVO" alias="retrieve" />
+		<typeAlias type="kr.or.annapharm.dto.RetrieveListVO" alias="retrieveList" />
+		<typeAlias type="kr.or.annapharm.command.RetrieveCommand" alias="retrieveCommand"/>
+		<typeAlias type="kr.or.annapharm.command.PastPrescriptionCommand" alias="pastPrescriptionCommand"/>
+
+
+		<typeAlias type="kr.or.annapharm.dto.DoctorVO" alias="doctor" />	<!-- 의사 -->
+		<typeAlias type="kr.or.annapharm.dto.ChemistVO" alias="chemist" />	<!-- 약사 -->
+		<typeAlias type="kr.or.annapharm.dto.PatientVO" alias="patient" />  <!-- 환자 -->
+		<typeAlias type="kr.or.annapharm.dto.PsStatusReadyPatientVO" alias="psStatusReady" />  <!-- 처방완료환자목록 -->
+		<typeAlias type="kr.or.annapharm.dto.AddMedicineListVO" alias="addMedicineList" />	<!-- 약 추가 목록 -->
+		<typeAlias type="kr.or.annapharm.dto.UpdatePrescriptionVO" alias="updatePrescription" />	<!-- 수정 처방전 저장 -->
+	</typeAliases>
+
+
+	<!-- sql Mapper -->
+<!-- 	<mappers>
+		<mapper resource="mappings/board-mapping.xml" />
+	</mappers>
+ -->
+
+
+
+</configuration>
+

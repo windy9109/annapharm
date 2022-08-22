@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Prescription-Mapper">
+
+	<sql id="search">
+		AND A.NAME LIKE '%'||#{keyword}||'%'
+	</sql>
+
+
+	<select id="selectPastPrescriptionList" resultType="pastPrescriptionCommand">
+
+SELECT A.PS_CODE
+     , A.NAME
+     ,B.ps_date
+     ,C.PI_DUTYNAME
+FROM
+(SELECT PS_CODE
+     , LISTAGG(MD_NAME,',') WITHIN GROUP (ORDER BY MD_NAME) NAME
+  FROM (SELECT c.PS_CODE,c.MD_NO, B.MD_NAME
+             , c.PRE_DRUG_NUM, c.PRE_DRUG_DAY, c.PRE_DRUG_COUNT
+          FROM PRE_DRUG c, MEDICINE B, PRESCRIPTION a
+         WHERE c.MD_NO = B.MD_NO
+           AND a.PS_CODE = c.PS_CODE
+           AND a.PS_COMPLETE_DATE IS NOT NULL
+           AND a.PATIENT_CODE = #{patientCode}
+           )
+ GROUP BY PS_CODE) a, PRESCRIPTION B, PHARMACY_INFO C
+ WHERE A.PS_CODE = B.PS_CODE
+   AND C.PI_HPID = B.PHMACY_CODE
+   <include refid="search" />
+  AND B.PS_DATE BETWEEN SYSDATE-180 AND SYSDATE
+		order by b.ps_date DESC
+	</select>
+
+	<select id="selectPastPrescriptionCount" resultType="int">
+		SELECT count(A.PS_CODE)
+FROM
+(SELECT PS_CODE
+     , LISTAGG(MD_NAME,',') WITHIN GROUP (ORDER BY MD_NAME) NAME
+  FROM (SELECT c.PS_CODE,c.MD_NO, B.MD_NAME
+             , c.PRE_DRUG_NUM, c.PRE_DRUG_DAY, c.PRE_DRUG_COUNT
+          FROM PRE_DRUG c, MEDICINE B, PRESCRIPTION a
+         WHERE c.MD_NO = B.MD_NO
+           AND a.PS_CODE = c.PS_CODE
+           AND a.PS_COMPLETE_DATE IS NOT NULL
+           AND a.PATIENT_CODE = #{patientCode}
+           )
+ GROUP BY PS_CODE) a, PRESCRIPTION B, PHARMACY_INFO C
+ WHERE A.PS_CODE = B.PS_CODE
+   AND C.PI_HPID = B.PHMACY_CODE
+   <include refid="search" />
+   AND B.PS_DATE BETWEEN SYSDATE-180 AND SYSDATE
+	</select>
+
+	<!-- 과거 처방 내역 중 하나를 클릭했을 경우 -->
+	<!-- 선택한 ps_coode를 통해 detail 정보 가져오기 -->
+
+	<select id="PastPrescriptionDetail" resultType="pastPrescriptionCommand">
+
+		SELECT
+    a.md_name
+   ,c.pre_drug_count
+   ,c.pre_drug_day
+   ,c.ps_code
+   ,c.MD_NO
+   ,d.PS_DATE
+   ,e.PI_DUTYNAME
+   ,e.PI_DUTYTEL1
+   ,d.PHMACY_CODE
+FROM
+    medicine a
+   ,medicine_info b
+   ,pre_drug c
+   ,prescription d
+   ,PHARMACY_INFO e
+WHERE d.ps_code = #{psCode}
+  AND   a.mi_code = b.mi_code
+  AND   a.md_no = c.md_no
+  AND   c.ps_code = d.ps_code
+  and   e.pi_hpid = d.PHMACY_CODE
+
+	</select>
+
+	<select id="PastPrescriptionDetailCount" resultType="int">
+
+	SELECT
+    count(a.md_name)
+FROM
+    medicine a
+   ,medicine_info b
+   ,pre_drug c
+   ,prescription d
+WHERE d.ps_code = #{psCode}
+  AND   a.mi_code = b.mi_code
+  AND   a.md_no = c.md_no
+  AND   c.ps_code = d.ps_code
+
+	</select>
+</mapper>
+
+

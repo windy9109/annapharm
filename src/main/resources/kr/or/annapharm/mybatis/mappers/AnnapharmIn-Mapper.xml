@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="AnnapharmIn-Mapper">
+
+
+<!-- 약사인 메인 검색  -->
+ 	<sql id="search">
+
+ 		<if test="searchType == 'tcw'.toString()">
+			and (c.chemist_in_title like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_content like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+  		<if test="searchType == 't'.toString()">
+			and c.chemist_in_type = '복약지도'
+			and (c.chemist_in_title like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_content like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+<!-- 		<if test="searchType1 == 'w'.toString()">
+			and c.chemist_in_type = '복용방법'
+			and (c.chemist_in_title like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_content like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_writer like '%'||#{keyword}||'%')
+		</if> -->
+		<if test="searchType == 'c'.toString()">
+			and c.chemist_in_type = '처방'
+			and (c.chemist_in_title like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_content like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+		<if test="searchType == 'tc'.toString()">
+			and c.chemist_in_type = '성분'
+			and (c.chemist_in_title like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_content like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+		<if test="searchType == 'cw'.toString()">
+			and c.chemist_in_type = '기타'
+			and (c.chemist_in_title like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_content like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+
+		<if test="searchType2 == 'qnaWaite'.toString()">
+			and NVL(C.COUNT1,0) > 0
+		</if>
+	</sql>
+
+
+<!-- 약사인 메인 -->
+	<select id="selectSearchAnnapharmInList"	resultType="annapharmIn">
+   SELECT
+	     C.CHEMIST_IN_CODE as CHEMIST_IN_CODE
+	    ,C.PATIENT_CODE as PATIENT_CODE
+	    ,C.CHEMIST_IN_TITLE as CHEMIST_IN_TITLE
+	    ,TO_CHAR(C.CHEMIST_IN_DATE, 'YY.MM.DD') AS CHEMIST_IN_DATE
+	    ,C.CHEMIST_IN_CONTENT as CHEMIST_IN_CONTENT
+	    ,C.CHEMIST_IN_VIEWCNT as CHEMIST_IN_VIEWCNT
+	    ,C.CHEMIST_IN_TYPE as CHEMIST_IN_TYPE
+	    ,C.CHEMIST_IN_WRITER as CHEMIST_IN_WRITER
+	    ,NVL(TO_CHAR(C.ANS_DATE, 'YY.MM.DD'),'-') AS ANS_DATE
+	    ,NVL(C.COUNT1,0) AS CHEMIST_IN_REPLY_CNT
+    FROM   (SELECT
+                     A.CHEMIST_IN_CODE
+                    ,A.PATIENT_CODE
+                    ,A.CHEMIST_IN_TITLE
+                    ,A.CHEMIST_IN_DATE
+                    ,A.CHEMIST_IN_CONTENT
+                    ,A.CHEMIST_IN_VIEWCNT
+                    ,A.CHEMIST_IN_TYPE
+                    ,A.CHEMIST_IN_WRITER
+                    ,B.ANS_DATE
+                    , RANK() OVER (PARTITION BY A.CHEMIST_IN_CODE ORDER BY B.ANS_DATE DESC) RANK1
+                    ,D.COUNT1
+                FROM che_in A LEFT OUTER JOIN CHE_IN_ANS B
+                        ON A.CHEMIST_IN_CODE = B.CHEMIST_IN_CODE
+                 LEFT OUTER JOIN (SELECT COUNT(*) AS COUNT1,CHEMIST_IN_CODE FROM CHE_IN_ANS GROUP BY CHEMIST_IN_CODE) D
+                     ON D.CHEMIST_IN_CODE  = A.CHEMIST_IN_CODE
+                order by chemist_in_date desc)C
+    WHERE RANK1 = 1
+    <include refid="search" />
+	</select>
+
+
+
+<!-- 약사인 리스트 카운트 -->
+	<select id="selectSearchAnnapharmInListCount" resultType="int">
+		select
+		count(*)
+		from
+		che_in
+		where CHEMIST_IN_CODE is not null
+<!--  		<include refid="search" /> -->
+		order by chemist_in_date desc
+	</select>
+
+
+
+
+<!-- 마이페이지 약사인 메인  -->
+ 	<sql id="search2">
+
+ 		<if test="searchType1 == 'tcw'.toString()">
+			and (c.chemist_in_title like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_content like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+ 		<if test="searchType1 == 't'.toString()">
+			and c.chemist_in_type = '복약지도'
+			and (c.chemist_in_title like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_content like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+		<if test="searchType1 == 'w'.toString()">
+			and c.chemist_in_type = '복용방법'
+			and (c.chemist_in_title like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_content like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+		<if test="searchType1 == 'c'.toString()">
+			and c.chemist_in_type = '처방'
+			and (c.chemist_in_title like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_content like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+		<if test="searchType1 == 'tc'.toString()">
+			and c.chemist_in_type = '성분'
+			and (c.chemist_in_title like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_content like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+		<if test="searchType1 == 'cw'.toString()">
+			and c.chemist_in_type = '기타'
+			and (c.chemist_in_title like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_content like '%'||#{keyword}||'%'
+			or
+			c.chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+
+		<if test="searchType2 == 'qnaWaite'.toString()">
+			and NVL(C.COUNT1,0) > 0
+		</if>
+	</sql>
+
+<!-- 마이페이지 약사인 메인 -->
+	<select id="selectSearchAnnapharmInList_myList_p" resultType="annapharmIn">
+	    select '1' AS chemistInReplyCnt, c.MEM_ID, a.CHEMIST_IN_CODE, a.CHEMIST_IN_TITLE, a.CHEMIST_IN_TYPE, a.CHEMIST_IN_VIEWCNT, b.CHEMIST_ANS_CODE, b.CHEMIST_IN_REPLY, TO_CHAR(b.ANS_DATE, 'YYYY/MM/DD') as ANS_DATE, b.CHEMIST_IN_ADOPT, a.*
+	    	from CHE_IN a, CHE_IN_ANS b, CHEMIST c
+	    where a.CHEMIST_IN_CODE = b.CHEMIST_IN_CODE and b.CHEMIST_CODE = c.CHEMIST_CODE
+	</select>
+
+
+
+
+
+
+<sql id="search3">
+
+ 		<if test="searchType1 == 'tcw'.toString()">
+			and (chemist_in_title like '%'||#{keyword}||'%'
+			or
+			chemist_in_content like '%'||#{keyword}||'%'
+			or
+			chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+ 		<if test="searchType1 == 't'.toString()">
+			and chemist_in_type = '복약지도'
+			and (chemist_in_title like '%'||#{keyword}||'%'
+			or
+			chemist_in_content like '%'||#{keyword}||'%'
+			or
+			chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+		<if test="searchType1 == 'w'.toString()">
+			and chemist_in_type = '복용방법'
+			and (chemist_in_title like '%'||#{keyword}||'%'
+			or
+			chemist_in_content like '%'||#{keyword}||'%'
+			or
+			chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+		<if test="searchType1 == 'c'.toString()">
+			and chemist_in_type = '처방'
+			and (chemist_in_title like '%'||#{keyword}||'%'
+			or
+			chemist_in_content like '%'||#{keyword}||'%'
+			or
+			chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+		<if test="searchType1 == 'tc'.toString()">
+			and chemist_in_type = '성분'
+			and (chemist_in_title like '%'||#{keyword}||'%'
+			or
+			chemist_in_content like '%'||#{keyword}||'%'
+			or
+			chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+		<if test="searchType1 == 'cw'.toString()">
+			and chemist_in_type = '기타'
+			and (chemist_in_title like '%'||#{keyword}||'%'
+			or
+			chemist_in_content like '%'||#{keyword}||'%'
+			or
+			chemist_in_writer like '%'||#{keyword}||'%')
+		</if>
+
+		<if test="searchType2 == 'qnaWaite'.toString()">
+			and NVL(C.COUNT1,0) > 0
+		</if>
+	</sql>
+
+<!-- 	<select id="selectBoardByImage" resultType="board">
+		select
+		*
+		from board
+		where content like '%'||#{imageFile}||'%'
+	</select> -->
+
+
+
+	<select id="selectAnnapharmInByBno"  resultType="annapharmIn">
+		select *
+		from che_in
+		where chemist_in_code=#{chemist_in_code}
+	</select>
+
+	<update id="insertAnnapharmIn" parameterType="annapharmIn">
+		insert
+		into
+		che_in(
+			 CHEMIST_IN_CODE
+			,PATIENT_CODE
+			,CHEMIST_IN_TITLE
+			,CHEMIST_IN_DATE
+			,CHEMIST_IN_CONTENT
+			,CHEMIST_IN_VIEWCNT
+			,CHEMIST_IN_TYPE
+			,CHEMIST_IN_WRITER)
+		values
+		(#{chemistInCode}, #{patientCode},#{chemistInTitle}, SYSDATE,
+		#{chemistInContent}, 0, #{chemistInType},#{chemistInWriter})
+	</update>
+
+	<update id="updateAnnapharmIn" parameterType="AnnapharmIn">
+		update
+		che_in
+		set
+		chemist_in_title=#{chemistInTitle}, chemist_in_content=#{chemistInContent}, chemist_in_writer = #{chemistInWriter}, chemist_in_type=#{chemistInType}
+		where chemist_in_code=#{chemistInCode}
+	</update>
+
+	<update id="deleteAnnapharmIn" >
+		delete
+		from che_in
+		where chemist_in_code=#{chemistInCode}
+	</update>
+
+	<update id="increaseViewCnt" parameterType="int">
+		update
+		che_in
+		set
+		chemist_in_viewcnt=chemist_in_viewcnt+1
+		where chemist_in_code=#{chemistInode}
+	</update>
+
+	<select id="selectAnnapharmInSeqNext" resultType="int">
+		select annapharmin_num_seq.nextval as chemist_in_code from dual
+	</select>
+
+
+	<update id="selection" parameterType="reply">
+	    update
+	        CHE_IN_ANS
+	    SET
+	        CHEMIST_IN_ADOPT = 'Y'
+	    where
+	        CHEMIST_ANS_CODE = ${chemistAnsCode}
+	</update>
+
+
+   <update id="selection2" parameterType="reply">
+	    update
+	        CHE_IN_ANS
+	    SET
+	        CHEMIST_IN_ADOPT = 'D'
+	    where
+	        CHEMIST_IN_CODE = ${chemistInCode} AND CHEMIST_ANS_CODE != ${chemistAnsCode}
+	</update>
+
+
+	<!-- 오늘중 카운터수 가장 높은 질문 -->
+	<select id="selectAnnapharmIn_main01"  resultType="annapharmIn">
+		select a.*
+		from CHE_IN A, (SELECT B.CHEMIST_IN_VIEWCNT, B.CHEMIST_IN_CODE, B.CHEMIST_IN_DATE
+		                  FROM(select CHEMIST_IN_VIEWCNT, CHEMIST_IN_CODE, CHEMIST_IN_DATE
+		                         from CHE_IN
+		                         where TO_CHAR(CHEMIST_IN_DATE, 'YYMMDD') = TO_CHAR(sysdate, 'YYMMDD') ORDER BY CHEMIST_IN_VIEWCNT DESC ) B
+		                    WHERE ROWNUM= 1) C
+		where A.CHEMIST_IN_CODE = C.CHEMIST_IN_CODE
+	</select>
+	<!-- 전체에서 카운터수 가장 높은 질문 -->
+	<select id="selectAnnapharmIn_main02"  resultType="annapharmIn">
+		select a.*
+			from CHE_IN a, (select c.CHEMIST_IN_VIEWCNT, c.CHEMIST_IN_CODE
+			from (select CHEMIST_IN_VIEWCNT, CHEMIST_IN_CODE
+			            from CHE_IN ORDER BY CHEMIST_IN_VIEWCNT DESC)c
+			where ROWNUM= 1) b
+			where b.CHEMIST_IN_CODE = a.CHEMIST_IN_CODE
+	</select>
+
+	<!-- 아하! 그렇구나! 성분에서 카운터가 가장 높은 질문-->
+	<select id="selectAnnapharmIn_main03"  resultType="annapharmIn">
+		select a.*
+			from CHE_IN A, (select MAX(CHEMIST_IN_VIEWCNT), CHEMIST_IN_CODE
+			            from CHE_IN WHERE CHEMIST_IN_TYPE = '성분' group by CHEMIST_IN_CODE) B
+			where A.CHEMIST_IN_CODE = B.CHEMIST_IN_CODE
+	</select>
+
+	<!-- new 복약지도 새글 -->
+	<select id="selectAnnapharmIn_main04"  resultType="annapharmIn">
+		select b.*
+			from CHE_IN B, (select A.CHEMIST_IN_CODE, A.CHEMIST_IN_DATE
+			                                FROM(select CHEMIST_IN_CODE, CHEMIST_IN_DATE
+			                                            from CHE_IN WHERE CHEMIST_IN_TYPE = '복약지도' ORDER BY CHEMIST_IN_DATE DESC )A
+			                                WHERE ROWNUM= 1)C
+			where B.CHEMIST_IN_CODE = C.CHEMIST_IN_CODE
+	</select>
+
+</mapper>
+
+

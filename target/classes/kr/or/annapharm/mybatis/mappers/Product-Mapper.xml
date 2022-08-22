@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Product-Mapper">
+	<sql id="search">
+		<if test="searchType == 'ALL'.toString()">
+			 and (b.md_class like '%'||'전문'||'%'
+			 or
+			 b.md_class like '%'||'일반'||'%')	
+		</if>
+		<if test="searchType == 'ETC'.toString()">
+			 and b.md_class like '%'||'전문'||'%'	
+		</if>
+		<if test="searchType == 'OTC'.toString()">
+			 and b.md_class like '%'||'일반'||'%'		
+		</if>
+		
+	</sql>
+	<sql id="search2">
+		<if test="searchType3 != ''">
+			  and c.mi_type like '%'||#{searchType3}||'%'			
+		</if>		
+	</sql>
+	<sql id="keyword">
+		<if test="keyword != ''">
+        	  and b.md_name like '%'||#{keyword}||'%'	
+        </if>      
+	</sql>
+	
+	<select id="selectProductList" resultType="product">
+		select a.product_qr
+		      ,a.pharmacy_code
+		      ,a.md_no
+		      ,a.product_ownnum
+		      ,a.product_unit
+		      ,a.product_ownnum_standard
+		      ,a.product_position
+		      ,a.product_date
+		      ,a.product_update_date
+		      ,b.md_name
+              ,b.mi_code
+		      ,substr(b.md_class,0,2) as md_class
+		      ,c.mi_type
+              ,c.mi_company
+              ,c.mi_unit
+              ,c.mi_price
+		  from product a, medicine b, medicine_info c
+		 where a.product_qr is not null
+		   and a.md_no = b.md_no
+		   and b.mi_code = c.mi_code
+		 	<include refid="search"/>
+			<include refid="search2"/> 
+			<include refid="keyword"/> 
+		 order by a.product_update_date DESC
+	</select>
+	
+	<select id="selectSearchProductListCount" resultType="int">
+		select count(*)
+		  from product a, medicine b, medicine_info c
+		 where a.product_qr is not null
+		   and a.md_no = b.md_no
+		   and b.mi_code = c.mi_code
+	     <include refid="search"/>
+	     <include refid="search2"/>
+	     <include refid="keyword"/>
+	      order by a.md_no ASC
+	</select>
+	
+	<select id="selectProductOneDetail" resultType="product">
+		select a.product_qr
+		      ,a.pharmacy_code
+		      ,a.md_no
+		      ,a.product_ownnum
+		      ,a.product_unit
+		      ,a.product_ownnum_standard
+		      ,a.product_position
+		      ,a.product_date
+		      ,b.md_name
+		      ,substr(b.md_class,0,2) as md_class
+		      ,c.mi_type
+		      ,c.mi_company
+		  from product a, medicine b, medicine_info c
+		 where a.product_qr is not null
+		   and a.md_no = b.md_no
+		   and b.mi_code = c.mi_code
+		   and a.md_no = #{mdNo}
+		 order by a.product_date ASC  
+	</select>
+	
+	<select id="selectProductOwnStandardNum" resultType="String">
+		select distinct(product_ownnum_standard)
+		  from product
+		 where md_no = #{mdNo}
+	</select>
+	
+	<select id="selectStandardOwnnum" resultType="String"> 
+		select distinct(product_ownnum_standard)
+		  from standard_num
+		 where md_no = #{mdNo}
+		   and pi_hpid = #{piHpid}
+	</select>
+	
+	<update id="insertStandardOwnnum" parameterType="productCommand">
+		insert into standard_num
+ 		values(#{piHpid},#{mdNo},#{productOwnnumStandard})
+	</update>
+	
+	<update id="updateStandardOwnnum" parameterType="productCommand">
+		update standard_num
+		   set product_ownnum_standard = #{productOwnnumStandard}
+		 where pi_hpid = #{piHpid}
+		   and md_no = #{mdNo}
+	</update>
+
+	<update id="updateProductDetail" parameterType="productCommand">
+		 update product
+            set product_date = #{productDate}
+               ,product_position = #{productPosition}
+               ,product_ownnum_standard = #{productOwnnumStandard}
+          where product_qr = #{productQr}
+	</update>
+	
+	<update id="insertProduct" parameterType="productCommand">
+		insert into product(product_qr
+		                   ,pharmacy_code
+		                   ,md_no
+		                   ,product_ownnum
+		                   ,product_ownnum_standard
+		                   ,product_unit
+		                   ,product_position
+		                   ,product_date
+		                   ,product_receive_no)
+		values(#{productQr},#{pharmacyCode},#{mdNo},#{productOwnnum}, #{productOwnnumStandard}, #{productUnit}, #{productPosition}, #{productDate}, #{receiveNo})      
+	</update>
+	
+	<update id="deleteProduct" parameterType="String">
+		delete product
+ 		 where product_receive_no = #{receiveNo}
+	</update>
+	
+</mapper>
+
+
+

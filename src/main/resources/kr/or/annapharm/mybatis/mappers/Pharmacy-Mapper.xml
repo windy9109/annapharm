@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Pharmacy-Mapper">
+
+
+	<select id="selectPharmacyName" resultType="pharmacy">
+		SELECT
+		pi_Rnum
+		,pi_Dutyname
+		,pi_Dutyaddr
+		FROM
+		pharmacy_info
+	</select>
+
+	<sql id="searchText">
+
+	</sql>
+
+	<select id="selectSearchPharmacyList" resultType="pharmacy">
+		SELECT
+		PI_HPID
+		,pi_Dutyname
+		,pi_Dutyaddr    
+		FROM
+		pharmacy_info
+		where PI_HPID is not null
+		and (
+			pi_Dutyname like '%'||#{keyword}||'%'
+			or
+			pi_Dutyaddr like '%'||#{keyword}||'%'
+			)
+
+	</select>
+
+
+
+	<select id="selectSearchPharmacyListCount" resultType="int">
+		select
+		count(*)
+		from
+		pharmacy_info
+		where pi_Rnum is not null
+		and (
+			pi_Dutyname like '%'||#{keyword}||'%'
+			or
+			pi_Dutyaddr like '%'||#{keyword}||'%'
+			)
+
+		<!-- <include refid="searchTest" /> -->
+	</select>
+
+
+</mapper>
+
+
+

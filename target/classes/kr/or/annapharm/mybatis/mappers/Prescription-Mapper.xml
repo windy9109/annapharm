@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Prescription-Mapper">
+
+	<select id="selectPrescriptionList" resultType="prescription">
+		select ps_code
+		      ,doctor_code
+		      ,patient_code
+		      ,chemist_code
+		      ,ps_date
+		      ,ps_lastdate
+		      ,ps_modify_req
+		      ,ps_complete_date
+		      ,ps_status
+		  from prescription
+		 where patient_code = #{patientCode}
+	</select>
+
+	<select id="selectPrescriptionOne" resultType="prescription">
+		select ps_code
+		      ,doctor_code
+		      ,patient_code
+		      ,chemist_code
+		      ,ps_date
+		      ,ps_lastdate
+		      ,ps_modify_req
+		      ,ps_complete_date
+		      ,ps_status
+		  from prescription
+		 where patient_code = #{patientCode}
+           and ps_code = #{psCode}
+	</select>
+
+	<select id="selectPrescriptionCount" resultType="int">
+		select count(a.psCode)
+		  from pre_drug a, prescription b
+		 where b.patient_code = #{patientCode}
+		   and a.ps_code = b.ps_code
+	</select>
+
+	<!-- 헤지 : 처방이력에서 처방전 선택 후 처방 상세 내역 출력  -->
+	<select id="selectPrescriptionDetail" resultType="prescriptionDetail">
+		select substr(a.md_class,1,2) as md_class
+		     , b.mi_type
+		     , a.mi_code
+		     , a.md_no
+		     , b.mi_use
+		     , a.md_name
+		     , c.pre_drug_count
+		     , c.pre_drug_day
+		     , c.ps_code
+		  from medicine a, medicine_info b, pre_drug c, prescription d
+		 where d.ps_code = #{psCode}
+		   and a.mi_code = b.mi_code
+		   and a.md_no = c.md_no
+		   and c.ps_code = d.ps_code
+	</select>
+
+	<!-- 병진 : 매출목록에서 처방조제 상세 내역을 가져올 때 사용 -->
+	<select id="selectSalesAnalyssisDetail" resultType="kr.or.annapharm.dto.SalesAnalysisDetailVO">
+		select  a.md_name
+			 , a.md_no
+             , b.mi_company
+             , b.mi_use
+             , c.pre_drug_num
+		     , c.pre_drug_count
+		     , c.pre_drug_day
+             , b.mi_price
+             , (c.pre_drug_num * b.mi_price) as total
+		  from medicine a, medicine_info b, pre_drug c, prescription d
+		 where d.ps_code = #{psCode}
+		   and a.mi_code = b.mi_code
+		   and a.md_no = c.md_no
+		   and c.ps_code = d.ps_code
+	</select>
+
+	<!-- 병진: 약사조제화면에서 약에대한 정보를 외부 URL 정보를 가져오는 sql문  -->
+	<select id="selectMedicineInfoOne" resultType="readMedicineInfo">
+		SELECT
+			B.md_no
+		    , B.md_name
+		    , B.md_effect
+		    , B.md_use
+		    , B.md_attention
+		  FROM pre_drug A, medicine B
+		 WHERE ps_code = #{psCode}
+		   and A.md_no = B.md_no
+		   and rownum = 1
+	</select>
+	
+	<!-- 헤지: 약사조제화면에서 선택한 약에대한 정보를 외부 URL 정보를 가져오는 sql문  -->
+	<select id="selectMedicineInfoOneMdNo" resultType="readMedicineInfo">
+		select md_no
+	       ,md_name
+	       ,md_effect
+	       ,md_use
+	       ,md_attention
+	  from medicine
+	where md_no = #{mdNo}
+	</select>
+	
+	<!-- 헤지 : 기존처방전 삭제 -->
+	<delete id="deleteOriginalPrescription" parameterType="String">
+		delete from pre_drug
+		 where ps_code = #{psCode}
+	</delete>
+
+	<!-- 헤지 :  수정 처방전 약 추가 -->
+	<update id="insertUpdatePrescription" parameterType="updatePrescription">
+		insert into pre_drug
+ 		values(#{psCode}, #{mdNo}, #{preDrugNum}, #{preDrugDay}, #{preDrugCount})
+	</update>
+	
+	<!-- 헤지 : 새 처방전 작성(처방전추가) -->
+	<update id="insertNewPrescription" parameterType="prescription">
+		insert into prescription(ps_code
+		                       , doctor_code
+		                       , patient_code
+		                       , chemist_code
+		                       , ps_date
+		                       , ps_lastdate
+		                       , ps_modify_req
+		                       , ps_complete_date
+		                       , ps_status
+		                       , ps_type)
+						 values(
+						 	   #{psCode}
+						     , #{doctorCode}
+						     , #{patientCode}
+						     , null
+						     , sysdate
+						     , sysdate
+		                     , null
+		                     , null
+		                     , '조제대기'
+						     , '처방')
+	</update>
+	
+	<select id="selectPreNumSeq" resultType="String">
+		select lpad(pre_num_seq.nextval,4,0) from dual
+	</select>
+
+
+	<!-- 헤지 : 약사가 처방이력에서 처방전 선택 후 처방전 상세 조회 (위에 정보)-->
+	<select id="selectPrescriptionUpDetailForPharmacist" resultType="preDetailForPharmacist">
+		select
+		    a.ps_code
+		   ,a.ps_lastdate
+		   ,b.hospital_name
+		   ,c.mem_name
+		   ,a.ps_status
+		   ,a.ps_type
+		   ,d.chemist_code
+		   ,d.pharmacy_code
+		from
+		    prescription a
+		   ,doctor b
+		   ,member c
+		   ,chemist d
+		where
+		    a.ps_code = #{psCode}
+		    and   a.doctor_code = b.doctor_code (+)
+		    and   b.mem_id = c.mem_id (+)
+		    and   a.chemist_code = d.chemist_code(+)
+	</select>
+	
+	<!-- 헤지 : 처방전에 포함된 약국명과 약사명 구하기 -->
+	<select id="selectChemistNameForPharmacist" resultType="preDetailForPharmacist">
+		select
+		    c.ps_code
+		   ,b.mem_name as chemistName
+		   ,a.pharmacy_code
+		   ,a.pharmacy_name
+		from
+		    chemist a
+		   ,member b
+		   ,prescription c
+		where
+		    c.ps_code = #{psCode}
+		    and   a.mem_id = b.mem_id
+		    and   a.chemist_code = c.chemist_code
+	</select>
+
+	<!-- 헤지 : 약사가 처방이력에서 처방전 선택 후 처방전 상세 조회 (아래 정보)-->
+	<select id="selectPrescriptionDownDetailForPharmacist" resultType="preDetailForPharmacist">
+		select
+		    substr(a.md_class,1,2) as md_class
+		   ,a.md_no
+		   ,a.md_name
+		   ,b.pre_drug_count
+		   ,b.pre_drug_day
+		   , ( ( b.pre_drug_count * b.pre_drug_day ) * d.mi_price ) as mi_price
+		   ,a.md_drug
+		   ,e.product_ownnum
+		   ,e.product_position
+		   ,c.ps_code
+		from
+		    medicine a
+		   ,pre_drug b
+		   ,prescription c
+		   ,medicine_info d
+		   ,product e
+		where
+		    c.ps_code = #{psCode}
+		    and   a.md_no = b.md_no
+		    and   b.ps_code = c.ps_code
+		    and   a.mi_code = d.mi_code
+		    and   a.md_no = e.md_no(+)
+	</select>
+	
+	<!-- 헤지 : 약사가 처방전 수정 요청 -->
+	<update id="updatePrescriptionRequest" parameterType="requestPrescription">
+		update prescription
+    	   set ps_modify_req = #{psModifyReq}
+     		  ,ps_status = '수정요청'
+              ,chemist_code = #{chemistCode}
+              ,phmacy_code = #{pharmacyCode}
+		 where ps_code = #{psCode}
+	</update>
+	
+	<!-- 헤지 : 수정 요청 정보 출력 -->
+	<select id="selectPrescriptionRequest" resultType="requestPrescription">
+		select
+		    a.ps_modify_req
+		   ,b.pharmacy_name
+		   ,c.mem_name
+		   ,d.pi_dutytel1
+		   ,d.pi_dutyaddr
+		from
+		    prescription a
+		   ,chemist b
+		   ,member c
+		   ,pharmacy_info d
+		where
+		    a.ps_code = #{psCode}
+		    and   a.chemist_code = b.chemist_code
+		    and   b.mem_id = c.mem_id
+		    and   a.phmacy_code = d.pi_hpid
+	</select>
+	
+	<!-- 헤지 : 수정요청처방전 수정 후 처방전상태변경 ('수정요청' -> '조제대기') -->
+	<update id="updatePsStatusModify" parameterType="string">
+		update prescription
+		   set ps_status = '조제대기'
+		   	  ,ps_modify_req = null
+		 where ps_code = #{psCode}
+	</update>
+	
+	<!-- 헤지 : 수정요청처방전 수정 후 대기열에서 환자 제거 -->
+	<update id="deletePatientModify" parameterType="string">
+		delete from waiting_patient
+		 where patient_code=#{patientCode}
+	</update>
+	
+	<!-- 헤지 : 약사)비방전 작성(처방전추가) -->
+	<update id="insertPrescriptionForChemist" parameterType="updatePrescription">
+		insert into prescription (
+						        ps_code
+						       ,doctor_code
+						       ,patient_code
+						       ,chemist_code
+						       ,ps_date
+						       ,ps_lastdate
+						       ,ps_complete_date
+						       ,ps_modify_req
+						       ,ps_status
+						       ,ps_type
+						       ,phmacy_code
+						    )
+						values (#{psCodeL}
+						   	    , null
+						 	    ,#{patientCode}
+								,#{chemistCode}
+								,sysdate
+								,sysdate
+								,sysdate
+								,null
+								,'조제대기'
+								,'비처방'
+								,#{pharmacyCode})
+	</update>
+	
+	<!-- 헤지 : 처방전조제완료)처방전상태 조제대기 -> 조제완료 -->
+	<update id="updatePrescriptionComplete" parameterType="prescriptionComplete">
+		update prescription
+		   set ps_status = '조제완료',
+		       ps_complete_date = sysdate,
+		       chemist_code = #{chemistCode},
+		       phmacy_code = #{pharmacyCode}
+		 where ps_code = #{psCode}
+	</update>
+	
+	
+</mapper>
+
+

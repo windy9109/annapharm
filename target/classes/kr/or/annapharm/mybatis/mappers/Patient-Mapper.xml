@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Patient-Mapper">
+
+
+
+	<!-- (예전) 처방 대기 환자 목록  -->
+	<select id="selectPatientList" resultType="map">
+		select a.patient_name
+			   ,substr(a.patient_regnum,1,6) as patient_birth
+			   ,a.patient_code
+			   ,a.patient_phone
+			   ,a.patient_addr
+		  from patient a, prescription b
+		 where b.ps_status = '조제대기'
+		   and a.patient_code = b.patient_code
+		 order by b.ps_code
+	</select>
+
+	<!-- (최근) 처방 대기 환자 목록  -->
+	<select id="selectWaitingPatientList" resultType="map">
+		select
+		    a.patient_code
+		   ,a.patient_name
+		   ,substr(b.patient_regnum,1,6) as patient_birth
+		   ,b.patient_phone
+		   ,b.patient_addr
+		from
+		     waiting_patient a
+		    ,patient b
+		where
+		    a.patient_code = b.patient_code
+	</select>
+
+	<!-- 헤지 : 의사)조제완료환자목록 -->
+	<select id="selectPsStatusReady" resultType="psStatusReady">
+		select
+		    a.patient_code
+		   ,substr(a.patient_regnum,1,6) as patient_birth
+		   ,a.patient_name
+		   ,b.doctor_code
+		   ,b.ps_status
+		   ,to_char(b.ps_lastdate, 'PM HH:MI:SS') as ps_time
+		   ,b.ps_code
+		from
+		    patient a
+		   ,prescription b
+		where
+		    b.doctor_code = #{doctorCode}
+		    and a.patient_code = b.patient_code
+		    and to_char( b.ps_lastdate, 'yyyymmdd' ) = to_char( sysdate, 'yyyymmdd')
+		order by b.ps_lastdate desc
+	</select>
+
+	<!-- 헤지 : 의사)조제완료환자목록갯수 -->
+	<select id="selectPsStatusReadyCount" resultType="int">
+		select
+		    count(*)
+		from
+		    patient a
+		   ,prescription b
+		where
+		    b.doctor_code = #{doctorCode}
+		    and   a.patient_code = b.patient_code
+		    and   to_char(b.ps_lastdate,'yyyymmdd') = to_char(sysdate,'yyyymmdd')
+	</select>
+
+	<!-- 처방 대기 환자 목록 : 환자의 최근 처방일  -->
+	<select id="selectPatiengLastPrescriptionDate" resultType="string">
+		SELECT
+		    nvl(to_char(ps_date,'yyyy.MM.dd'),'-')
+		FROM
+		    (
+		        SELECT MAX(b.ps_date) as ps_date
+		        FROM
+		            patient a
+		           ,prescription b
+		        WHERE
+		            a.patient_code = #{patientCode}
+		            AND   a.patient_code = b.patient_code
+		        ORDER BY
+		            b.ps_date DESC
+		    )
+		WHERE
+		    ROWNUM = 1
+	</select>
+
+	<!-- (예전) 처방 대기 환자 목록  중 처방전 작성할 환자 선택 -->
+	<select id="selectPatientOne" resultType="patient">
+		select a.patient_name
+			   ,substr(a.patient_regnum,1,6) as patient_birth
+			   ,a.patient_code
+			   ,a.patient_phone
+			   ,a.patient_addr
+		  from patient a, prescription b
+		 where b.ps_status = '조제대기'
+		   and a.patient_code = b.patient_code
+		   and a.patient_code = #{patientCode}
+		 order by b.ps_code
+	</select>
+
+	<!-- (최근) 처방 대기 환자 목록  중 처방전 작성할 환자 선택 -->
+	<select id="selectWaitingPatientChoice" resultType="patient">
+	select
+	    b.patient_code
+	   ,b.patient_name
+	   ,substr(b.patient_regnum,1,6) as patient_birth
+	   ,b.patient_phone
+	   ,b.patient_addr
+	from
+	     waiting_patient a
+	    ,patient b
+	    ,prescription c
+	where
+	    b.patient_code = c.patient_code(+)
+	and
+	    a.patient_code(+) = b.patient_code
+	and
+	    b.patient_code = #{patientCode}
+	</select>
+
+
+	<select id="selectPatientToNameRegnum" resultType="patient">
+		SELECT
+		      patient_code
+		     ,mem_id
+		     ,patient_name
+		     ,patient_regnum
+		     ,patient_phone
+		     ,patient_addr
+		  FROM patient
+		 where patient_name = #{patientName}
+		   and patient_regnum like '%'||#{patientRegnum}||'%'
+	</select>
+
+<!-- 	<select id="selectPatientListCount" resultType="int"> -->
+<!-- 		select -->
+<!-- 		count(*) -->
+<!-- 		from -->
+<!-- 		patient -->
+<!-- 		order by patient_regnum desc -->
+<!-- 	</select> -->
+
+
+	<select id="selectPatientPrescription" resultType="prescriptionHistory">
+		select a.ps_code
+		     , a.ps_date
+		     , a.ps_status
+		     , b.hospital_name
+		     , c.mem_name
+		  from prescription a, doctor b, member c
+		 where patient_code = #{patientCode}
+		   and a.doctor_code = b.doctor_code
+		   and b.mem_id = c.mem_id
+	       and a.ps_date between to_date(to_char(sysdate - #{psTime},'yyyy-mm-dd') )
+	                      	 and to_date(to_char(sysdate + '1','yyyy-mm-dd') )
+		 order by a.ps_date desc
+	</select>
+
+	<!-- 병진 : 약사가 환자의 과거 처방이력을 조회 시 사용 -->
+	<select id="selectPrescriptionLogByPharmacist" resultType="prescriptionLog">
+		SELECT
+		    A.ps_type 				<!-- 구분(처방/비처방) -->
+		    , A.ps_code 			<!-- 교부번호 -->
+		    , A.ps_date 			<!-- 교부일자 -->
+		    , A.ps_complete_date	<!-- 조제완료일 -->
+		    , B.HOSPITAL_NAME       <!-- 병원 이름 -->
+		    , A.doctor_code			<!-- 의사 코드 -->
+		    , D.pharmacy_name 		<!-- 약국이름 -->
+		    , A.ps_status 			<!-- 처방전 상태 -->
+		  FROM prescription A, chemist D, doctor B
+		 WHERE patient_code = #{patientCode}
+		   and A.CHEMIST_CODE = D.CHEMIST_CODE(+)
+		   and A.doctor_code = B.doctor_code(+)
+		   order by A.ps_date DESC
+	</select>
+
+	<!-- 병진 : 비로그인 처방전 조회 시 사용(최대 조회 30일) -->
+	<select id="selectNonloginPrescriptionLogByPharmacistTo30" resultType="prescriptionLog">
+		SELECT
+		    A.ps_type 				<!-- 구분(처방/비처방) -->
+		    , A.ps_code 			<!-- 교부번호 -->
+		    , A.ps_date 			<!-- 교부일자 -->
+		    , A.ps_complete_date	<!-- 조제완료일 -->
+		    , B.HOSPITAL_NAME       <!-- 병원 이름 -->
+		    , A.doctor_code			<!-- 의사 코드 -->
+		    , D.pharmacy_name 		<!-- 약국이름 -->
+		    , A.ps_status 			<!-- 처방전 상태 -->
+		  FROM prescription A, chemist D, doctor B
+		 WHERE patient_code = #{patientCode}
+		   and A.CHEMIST_CODE = D.CHEMIST_CODE(+)
+		   and A.doctor_code = B.doctor_code
+		   and A.ps_date between sysdate-30 and sysdate
+		   order by A.ps_date DESC
+	</select>
+
+	<select id="selectDoctorNameByCode" resultType="prescriptionLog">
+		select
+		    A.hospital_name
+		    , B.mem_name
+		  from doctor A, member B
+		 where doctor_code = #{doctorCode}
+		   and A.mem_id = B.mem_id
+	</select>
+
+	<!-- 헤지 : 약사가 환자 등록  -->
+	<insert id="insertPatientForPharmacist" parameterType="member">
+		insert into patient (
+			    patient_code
+			   ,mem_id
+			   ,patient_name
+			   ,patient_regnum
+			   ,patient_phone
+			) values (
+			    #{patientCode}
+			   ,#{memId}
+			   ,#{memName}
+			   ,#{memRegnum}
+			   ,#{memTel}
+			)
+	</insert>
+
+	<!-- 헤지 : 처방전 작성 완료된 환자는 대기열에서 지우기 -->
+	<update id="deletePatientFromWaiting" parameterType="patient">
+		delete from waiting_patient
+		 where patient_code = #{patientCode}
+	</update>
+
+	<!-- 헤지 : 수정요청한 환자는 대기열에 추가 -->
+	<update id="insertWaitingPatient" parameterType="requestPrescription">
+		insert into waiting_patient
+		values(#{patientCode}, #{patientName})
+	</update>
+
+	<!-- 병진 : 로그인 없이 환자의 정보를 조회하는 SQL문 -->
+	<select id="findNonLoginUser" parameterType="patient" resultType="patient">
+		SELECT
+		    patient_code		<!-- 환자코드  -->
+		   ,mem_id				<!-- 환자 아이디  -->
+		   ,patient_name		<!-- 환자 이름  -->
+		   ,patient_regnum		<!-- 환자 주민번호 -->
+		   ,patient_phone		<!-- 환자 전화번호 -->
+		   ,patient_addr		<!-- 환자 주소 -->
+		  FROM patient
+		 where patient_name = #{patientName}
+		   and substr(patient_regnum,0,6) = #{patientRegnum}
+		   and patient_phone = #{patientPhone}
+	</select>
+
+</mapper>
+
+

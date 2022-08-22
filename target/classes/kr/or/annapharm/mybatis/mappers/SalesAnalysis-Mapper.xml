@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SalesAnalysis-Mapper">
+
+	<sql id="search">
+		<if test="searchType == O.toString">
+			and chemist_code == #{searchType}
+		</if>
+	</sql>
+
+	<!-- 병진 : 로그인한 약사의 약국에 해당하는 모든 약사를 가져오는 SQL -->
+	<select id="selectChemistsName" resultType="kr.or.annapharm.dto.RegistBillVO">
+		SELECT
+			A.CHEMIST_CODE
+		    ,B.mem_name
+		  FROM chemist A, member B
+		 where pharmacy_code = #{loginUserPharmacyCode}
+		   and A.mem_id = B.mem_id
+	</select>
+
+	<!-- 병진 : 로그인한 유저 아이디로 약국 코드와 약사 이름 뽑기 -->
+	<select id="loginUserpharmacyCode" resultType="kr.or.annapharm.dto.RegistBillVO">
+		select
+		    A.PHARMACY_CODE as pi_hpid 					<!-- 약국 코드 -->
+		    ,B.mem_name 		     			<!-- 성명 -->
+		    ,substr(B.mem_regnum,0,6) as mem_regnum		<!-- 생년월일 -->
+		    ,A.CHEMIST_CODE
+		  from chemist A, member B
+		 where A.mem_id = #{memId}
+		   and A.mem_id = B.mem_id
+	</select>
+
+	<!-- 병진 : 로그인한 약사의 약국 코드로  약국의 정보를 가져오는 SQL문 -->
+	<select id="selectPharmacyInfo" resultType="kr.or.annapharm.dto.RegistBillVO">
+		select
+		    PI_DUTYNAME 									<!-- 약국 이름 -->
+		    ,PI_DUTYTEL1 									<!-- 약국 전화번호 -->
+		    ,PI_DUTYADDR 									<!-- 약국 주소 -->
+		    ,(concat(PI_POSTCDN1,PI_POSTCDN2)) as pi_postcdn <!-- 약국 우편번호 -->
+		  from pharmacy_info
+		 where pi_hpid = #{piHpid}
+	</select>
+
+	<!-- 저장/출력 내역 리스트를 가져오는 sql문 -->
+	<select id="selectPrintSaveTableList" resultType="kr.or.annapharm.dto.PrescriptionSaveLogVO">
+		SELECT
+		    pslog_chname
+		   ,pslog_count
+		   ,pslog_saveday
+		   ,pslog_pharmacycode
+		   ,pslog_status
+		   ,pslog_num
+		 FROM prescription_savelog
+		where (pslog_saveday >= (sysdate - 90) or pslog_saveday is null)
+		  and Pslog_Pharmacycode = #{pharmacyCode}
+		order by pslog_saveday DESC
+	</select>
+
+	<!-- savelogPrescription에서 pslogNum을 받아 해당하는 번호에 저장된 처방전의 조제 완료 날짜 뽑아내는  sql문-->
+	<select id="selectsavelogPrescriptionList" resultType="kr.or.annapharm.dto.SavelogPrescriptionVO">
+		SELECT
+		    A.pslog_num
+		   ,A.sp_pscode
+		   ,B.ps_complete_date
+		FROM savelog_prescription A, prescription B
+		where A.sp_pscode = B.ps_code
+		  and pslog_num = #{pslogNum}
+		order by B.ps_complete_date DESC
+	</select>
+
+	<!-- 병진 : 기간이나 약사에 따라 처방전을 가져오는 sql문 -->
+	<select id="selectSearchAnalysisList" resultType="salesAnalysis">
+		SELECT
+		    A.ps_complete_date			<!-- 처방 완료 일자 -->
+		   ,A.ps_type           		<!-- 구분(처방/비처방) -->
+		   ,C.mem_name as chemistName   <!-- 조제약사 -->
+		   ,F.mem_name as patientName   <!-- 환자이름 -->
+		   ,A.ps_code          			<!-- 처방전 코드 -->
+		  FROM prescription A, chemist B, member C, patient D, member F
+		 where ps_complete_date is not null
+		   and A.ps_complete_date between to_date(#{startDate},'YYYY-MM-DD') and to_date(#{endDate},'YYYY-MM-DD') + 1
+		   <!-- and A.chemist_code = 'F00001' 동적쿼리로 대체-->
+		   and A.CHEMIST_CODE = B.CHEMIST_CODE
+		   and B.mem_id = C.mem_id
+		   and A.patient_code = D.patient_code
+		   and D.mem_id = F.mem_id
+		   and A.ps_save = 'G'
+		   and A.PHMACY_CODE = 'C2104147'
+		   order by A.ps_complete_date desc
+	</select>
+
+	<!-- 병진 :  -->
+	<select id="selectSaveAndPrintDetailList" resultType="salesAnalysis">
+		SELECT
+	        A.ps_complete_date			<!-- 처방 완료 일자 -->
+	       ,A.ps_type           		<!-- 구분(처방/비처방) -->
+	       ,C.mem_name as chemistName   <!-- 조제약사 -->
+	       ,F.mem_name as patientName   <!-- 환자이름 -->
+	       ,A.ps_code          			<!-- 처방전 코드 -->
+	      FROM prescription A, chemist B, member C, patient D, member F, savelog_prescription G
+	     where A.chemist_code = B.chemist_code
+	       and B.mem_id = C.mem_id
+	       and A.patient_code = D.patient_code
+	       and D.mem_id = F.mem_id
+	       and A.ps_code = G.sp_pscode
+	       and G.pslog_num = #{pslog_num}
+	       order by A.ps_complete_date desc
+	</select>
+
+	<!-- 병진 : 처방전 코드를 통해 해당 처방전의 처방약 정보를 가져오는 SQL문 -->
+	<select id="selectSearchAnalysisListMedicienData" resultType="MedicienCalculat">
+		SELECT
+		    A.ps_code     		<!-- 처방전 코드 -->
+		   , A.md_no           	<!-- 약품 번호 -->
+		   , A.pre_drug_day    	<!-- 조제일수 -->
+		   , A.pre_drug_num  	<!-- 약 총 개수 -->
+		   , B.md_drug         	<!-- 마약류 구분 -->
+		   , C.mi_price			<!-- 약 가격 -->
+		  FROM pre_drug A, medicine B, medicine_info C
+		 where ps_code = #{psCode}
+		   and A.md_no = B.md_no
+		   and B.mi_code = C.mi_code
+	</select>
+
+	<!-- 병진 : 임시저장, 출력 기록 등록시 번호 컬럼에 들어갈 시퀀스 값을 불러오는 SQL문 -->
+	<select id="saveSEQnumFind" resultType="int">
+		select PRESCRIPTION_SAVELOG_SEQ.nextval from dual
+	</select>
+
+	<!-- 병진 : 매출 현황 페이지에서 임시저장을 눌렀을 때 prescriptionSavelog에 insert하기 위한 SQL문 -->
+	<update id="prescriptionSavelogTemporarilySaveInsert" parameterType="kr.or.annapharm.dto.PrescriptionSaveLogVO">
+		INSERT INTO prescription_savelog (
+		    pslog_chname
+		   ,pslog_count
+		   ,pslog_saveday
+		   ,pslog_pharmacycode
+		   ,pslog_status
+		   ,pslog_num
+		) VALUES (
+		    #{pslogChname}
+		   ,#{pslogCount}
+		   ,null
+		   ,#{pslogPharmacycode}
+		   ,'임시'
+		   ,#{pslogNum}
+		)
+	</update>
+
+	<!-- 병진 : 매출 현황 페이지에서 요양급여신청서 저장을 눌렀을 때 prescriptionSavelog에 insert하기 위한 SQL문 -->
+	<update id="prescriptionSavelogPrintSaveinsert" parameterType="kr.or.annapharm.dto.PrescriptionSaveLogVO">
+		INSERT INTO prescription_savelog (
+		    pslog_chname
+		   ,pslog_count
+		   ,pslog_saveday
+		   ,pslog_pharmacycode
+		   ,pslog_status
+		   ,pslog_num
+		) VALUES (
+		    #{pslogChname}
+		   ,#{pslogCount}
+		   ,sysdate
+		   ,#{pslogPharmacycode}
+		   ,'출력'
+		   ,#{pslogNum}
+		)
+	</update>
+
+	<!-- 병진 : 매출 현황 페이지에서 임시저장이나 요양급여신청서 저장을 눌렀을 때 savelogPrescription에 insert하기 위한 SQL문  -->
+	<update id="savelogPrescriptionSaveInsert" parameterType="kr.or.annapharm.dto.PrescriptionSaveLogVO">
+		INSERT INTO SAVELOG_PRESCRIPTION
+			(PSLOG_NUM, SP_PSCODE)
+		VALUES(#{pslogNum}, #{spPscode})
+	</update>
+
+	<!-- 병진 : 매출 현황 페이지에서 임시저장이나 출력으로 prescriptionSavelog에 저장된 값을 지우기 위한 SQL문 -->
+	<update id="prescriptionSavelogDelete" parameterType="kr.or.annapharm.dto.PrescriptionSaveLogVO">
+		DELETE FROM TEAM3_202201F.PRESCRIPTION_SAVELOG
+		WHERE PSLOG_NUM=#{pslogNum}
+	</update>
+
+	<!-- 병진 : 매출 현황 페이지에서 임시저장이나 출력으로  savelogPrescription에 저장된 값을 지우기 위한 SQL문 -->
+	<update id="savelogPrescriptionDelete" parameterType="kr.or.annapharm.dto.PrescriptionSaveLogVO">
+		DELETE FROM TEAM3_202201F.SAVELOG_PRESCRIPTION
+		WHERE PSLOG_NUM=#{pslogNum}
+	</update>
+
+	<!-- 병진 : 임시저장이나 출력이 진행된 처방전의 처방전 코드를 받아 ps_cod의 값을 U로 변경하는 SQL문-->
+	<update id="prescriptionSaveupdate">
+		update prescription
+		   set ps_save='U'
+		 where ps_code = #{spPscode}
+	</update>
+
+	<!-- 병진 : 임시저장이나 출력에서 삭제된 처방전의 처방전 코드를 받아 ps_cod의 값을 G로 변경하는 SQL문-->
+	<update id="prescriptionDeleteupdate">
+		update prescription
+		   set ps_save='G'
+		 where ps_code = #{spPscode}
+	</update>
+
+	<!-- (대쉬보드) 최근 일주일 처방전 가져오기 -->
+	<select id="weekPrescriptionList" resultType="salesAnalysis">
+		SELECT
+	        A.ps_complete_date			<!-- 처방 완료 일자 -->
+	       ,A.ps_code          			<!-- 처방전 코드 -->
+	      FROM prescription A
+	     where ps_complete_date is not null
+	       and A.ps_complete_date between SYSDATE-7 and SYSDATE+1
+	       and A.PHMACY_CODE = #{pharmacyCode}
+	       order by A.ps_complete_date desc
+	</select>
+	<!-- (대쉬보드) 최근 한달 처방전 가져오기 -->
+	<select id="monthPrescriptionList" resultType="salesAnalysis">
+		SELECT
+	        A.ps_complete_date			<!-- 처방 완료 일자 -->
+	       ,A.ps_code          			<!-- 처방전 코드 -->
+	      FROM prescription A
+	     where ps_complete_date is not null
+	       and A.ps_complete_date between TRUNC(SYSDATE, 'MM') and last_day(sysdate)
+	       and A.PHMACY_CODE = #{pharmacyCode}
+	       order by A.ps_complete_date desc
+	</select>
+
+	<!-- (대쉬보드) 최근 1년 처방전 가져오기 -->
+	<select id="yearPrescriptionList" resultType="salesAnalysis">
+		SELECT
+	        A.ps_complete_date			<!-- 처방 완료 일자 -->
+	       ,A.ps_code          			<!-- 처방전 코드 -->
+	      FROM prescription A
+	     where ps_complete_date is not null
+	       and A.ps_complete_date between TRUNC(SYSDATE, 'YYYY') and sysdate
+	       and A.PHMACY_CODE = #{pharmacyCode}
+	       order by A.ps_complete_date desc
+	</select>
+
+
+	<!-- 병진 : 약국 정보를 넣기 위한  SQL문 -->
+	<select id="test" resultType="kr.or.annapharm.PharmacyAPIVO">
+	INSERT INTO pharmacy_info (
+				pi_dutyname
+				,pi_rnum
+				,pi_dutyaddr
+				,pi_dutytel1
+				,pi_dutytime1c
+				,pi_dutytime1s
+				,pi_dutytime2c
+				,pi_dutytime2s
+				,pi_dutytime3c
+				,pi_dutytime3s
+				,pi_dutytime4c
+				,pi_dutytime4s
+				,pi_dutytime5c
+				,pi_dutytime5s
+				,pi_dutytime6c
+				,pi_dutytime6s
+				,pi_dutytime7c
+				,pi_dutytime7s
+				,pi_dutytime8c
+				,pi_dutytime8s
+				,pi_hpid
+				,pi_postcdn1
+				,pi_postcdn2
+				,pi_wgs84lon
+				,pi_wgs84lat
+				) VALUES (
+				'${piDutyname}'
+				,'${piRnum}'
+				,'${piDutyaddr}'
+				,'${piDutytel1}'
+				,'${piDutytime1c}'
+				,'${piDutytime1s}'
+				,'${piDutytime2c}'
+				,'${piDutytime2s}'
+				,'${piDutytime3c}'
+				,'${piDutytime3s}'
+				,'${piDutytime4c}'
+				,'${piDutytime4s}'
+				,'${piDutytime5c}'
+				,'${piDutytime5s}'
+				,'${piDutytime6c}'
+				,'${piDutytime6s}'
+				,'${piDutytime7c}'
+				,'${piDutytime7s}'
+				,'${piDutytime8c}'
+				,'${piDutytime8s}'
+				,'${piHpid}'
+				,'${piPostcdn1}'
+				,'${piPostcdn2}'
+				,'${piWgs84lon}'
+				,'${piWgs84lat}'
+				)
+	</select>
+
+	<select id="selectSaleNumSeq" resultType="String">
+		select lpad(sale_num_seq.nextval,3,0) from dual
+	</select>
+
+	<!-- sale테이블에 데이터 넣기 - 판매데이터 -->
+	<update id="insertSalePrescription" parameterType="prescriptionComplete">
+		insert into sale values (
+		    #{saleNo}
+		   ,#{chemistCode}
+		   ,#{patientCode}
+		   ,#{psCode}
+		   ,sysdate
+		   ,#{salePrice}
+		)
+	</update>
+
+	<!-- sale_cart 테이블에 데이터 넣기 - 약데이터 -->
+	<update id="insertSaleCartMedicine" parameterType="prescriptionComplete">
+		insert into sale_cart values (
+		    #{saleNo}
+		   ,#{mdNo}
+		   ,#{saleCartNum}
+		   ,#{saleCartPrice}
+		)
+	</update>
+
+</mapper>

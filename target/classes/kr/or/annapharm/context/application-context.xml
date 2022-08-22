@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns:c="http://www.springframework.org/schema/c"
+   xmlns:p="http://www.springframework.org/schema/p"
+   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+
+<!--    <bean id ="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+       <property name="mapperLocations" value="classpath:sql-map-config.xml"/>
+       <property name="dataSource" value="dataSource"/>
+      </bean> -->
+
+
+	<!-- summernote Image Path -->
+	<bean id="imgPath" class="java.lang.String">
+		<constructor-arg value="${summernote.img}" />
+	</bean>
+
+	<!-- file upload -->
+<!--  	<bean id="fileUploadPath" class="java.lang.String">
+		<constructor-arg value="${board.upload}"/>
+	</bean> -->
+
+
+
+
+   <!-- login user log path -->
+	<bean id="loginUserLogSavePath" class="java.lang.String">
+		<constructor-arg value="${login.user.log}"/>
+	</bean>
+
+	<bean id="errorLogPath" class="java.lang.String">
+		<constructor-arg value="${error.log}" />
+	</bean>
+
+   <!-- Repository -->
+    <bean id="productDAO" class="kr.or.annapharm.dao.ProductDAOImpl"
+       p:session-ref="sqlSession"
+    />
+    <bean id="receiveDAO" class="kr.or.annapharm.dao.ReceiveOrderDAOImpl"
+       p:session-ref="sqlSession"
+    />
+    <bean id="boardDAO" class="kr.or.annapharm.dao.BoardDAOImpl"
+       p:session-ref="sqlSession"
+    />
+     <bean id="annapharmInDAO" class="kr.or.annapharm.dao.AnnapharmInDAOImpl"
+       p:session-ref="sqlSession"
+    />
+
+   <bean id="patientDAO" class="kr.or.annapharm.dao.PatientDAOImpl"
+      p:session-ref="sqlSession"
+   />
+   <bean id="medicineDAO" class="kr.or.annapharm.dao.MedicineDAOImpl"
+      p:session-ref="sqlSession"
+   />
+   <bean id="medicineInfoDAO" class="kr.or.annapharm.dao.MedicineInfoDAOImpl"
+      p:session-ref="sqlSession"
+   />
+   <bean id="classficationDAO" class="kr.or.annapharm.dao.ClassficationDAOImpl"
+      p:session-ref="sqlSession"
+   />
+
+   <bean id="prescriptionDAO" class="kr.or.annapharm.dao.PrescriptionDAOImpl"
+      p:session-ref="sqlSession"
+   />
+   <bean id="menuDAO" class="kr.or.annapharm.dao.MenuDAOImpl"
+      p:session-ref="sqlSession"
+   />
+
+   <bean id="replyDAO" class="kr.or.annapharm.dao.ReplyDAOImpl"
+      p:session-ref="sqlSession"
+   />
+
+   <bean id="memberDAO" class="kr.or.annapharm.dao.MemberDAOImpl"
+      p:session-ref="sqlSession"
+   />
+
+   <bean id="expertDashBoardDAO" class="kr.or.annapharm.dao.ExpertDashBoardDAOImpl"
+      p:session-ref="sqlSession"
+   />
+
+   <bean id="businessDAO" class="kr.or.annapharm.dao.BusinessDAOImpl"
+      p:session-ref="sqlSession"
+   />
+
+   <bean id="hospitalDAO" class="kr.or.annapharm.dao.HospitalDAOImpl"
+      p:session-ref="sqlSession"
+   />
+
+   <bean id="pharmacyDAO" class="kr.or.annapharm.dao.PharmacyDAOImpl"
+      p:session-ref="sqlSession"
+   />
+   <bean id="medicienBillDAO" class="kr.or.annapharm.dao.MedicienBillDAOImpl"
+      p:session-ref="sqlSession"
+   />
+   <bean id="salesAnalysisDAO" class="kr.or.annapharm.dao.SalesAnalysisDAOImpl"
+      p:session-ref="sqlSession"
+   />
+
+   <bean id="managerDashBoardDAO" class="kr.or.annapharm.dao.ManagerDashBoardDAOImpl"
+      p:session-ref="sqlSession"
+   />
+
+   <bean id="RetrieveDAO" class="kr.or.annapharm.dao.RetrieveDAOImpl"
+      p:session-ref="sqlSession"
+   />
+   <bean id="QnaDAO" class="kr.or.annapharm.dao.QnaDAOImpl"
+   	  p:session-ref="sqlSession"
+   />
+	<bean id="PastPrescriptionDAO" class="kr.or.annapharm.dao.PastPrescriptionDAOImpl"
+   	  p:session-ref="sqlSession"
+   />
+
+
+
+
+   <!-- Service -->
+   <bean id="productService" class="kr.or.annapharm.service.ProductServiceImpl"
+      p:productDAO-ref="productDAO"
+   />
+
+   <bean id="receiveService" class="kr.or.annapharm.service.ReceiveOrderServiceImpl"
+      p:receiveDAO-ref="receiveDAO"
+   />
+
+   <bean id="managerDashBoardService" class="kr.or.annapharm.service.ManagerDashBoardServiceImpl"
+      p:managerDashBoardDAO-ref="managerDashBoardDAO"
+   />
+
+   <bean id="memberService" class="kr.or.annapharm.service.MemberServiceImpl"
+      p:memberDAO-ref="memberDAO"
+      p:patientDAO-ref="patientDAO"
+   />
+
+   <bean id="expertDashBoardService" class="kr.or.annapharm.service.ExpertDashBoardServiceImpl"
+      p:expertDashBoardDAO-ref="expertDashBoardDAO"
+   />
+
+
+   <bean id="annapharmInService" class="kr.or.annapharm.service.AnnapharmInServiceImpl"
+      p:annapharmInDAO-ref="annapharmInDAO"
+      p:replyDAO-ref="replyDAO"
+   />
+
+   <bean id="replyService" class="kr.or.annapharm.service.ReplyServiceImpl"
+      p:replyDAO-ref="replyDAO"
+   />
+
+   <bean id="boardService" class="kr.or.annapharm.service.BoardServiceImpl"
+      p:boardDAO-ref="boardDAO"
+   />
+   <bean id="medicineService" class="kr.or.annapharm.service.MedicineServiceImpl"
+      p:medicineDAO-ref="medicineDAO"
+   />
+
+   <bean id="medicineInfoService" class="kr.or.annapharm.service.MedicineInfoServiceImpl"
+      p:medicineInfoDAO-ref="medicineInfoDAO"
+   />
+
+   <bean id="patientService" class="kr.or.annapharm.service.PatientServiceImpl"
+         p:patientDAO-ref="patientDAO"
+   />
+   <bean id="prescriptionService" class="kr.or.annapharm.service.PrescriptionServiceImpl"
+         p:prescriptionDAO-ref="prescriptionDAO"
+         p:medicienBillDAO-ref="medicienBillDAO"
+   />
+   <bean id="classficationService" class="kr.or.annapharm.service.ClassficationServiceImpl"
+        p:classficationDAO-ref="classficationDAO"
+   />
+   <bean id="menuService" class="kr.or.annapharm.service.MenuServiceImpl"
+         p:menuDAO-ref="menuDAO"
+   />
+   <bean id="businessService" class="kr.or.annapharm.service.BusinessServiceImpl"
+        p:businessDAO-ref="businessDAO"
+   />
+
+   <bean id="hospitalService" class="kr.or.annapharm.service.HospitalServiceImpl"
+        p:hospitalDAO-ref="hospitalDAO"
+   />
+
+   <bean id="pharmacyService" class="kr.or.annapharm.service.PharmacyServiceImpl"
+        p:pharmacyDAO-ref="pharmacyDAO"
+   />
+   <bean id="salesAnalysisService" class="kr.or.annapharm.service.SalesAnalysisServiceImpl"
+        p:salesAnalysisDAO-ref="salesAnalysisDAO"
+        p:medicienBillDAO-ref="medicienBillDAO"
+   />
+
+   <bean id="test" class="kr.or.annapharm.PharmacyAPI"
+        p:salesAnalysisService-ref="salesAnalysisService"
+   />
+
+   <bean id="RetrieveService" class="kr.or.annapharm.service.RetrieveServiceImpl"
+        p:retrieveDAO-ref="RetrieveDAO"
+   />
+   <bean id="QnaService" class="kr.or.annapharm.service.QnaServiceImpl"
+   		p:qnaDAO-ref="QnaDAO"
+   />
+   <bean id="PastPrescriptionService" class="kr.or.annapharm.service.PastPrescriptionServiceImpl"
+   		p:pastPrescriptionDAO-ref="PastPrescriptionDAO"
+   />
+   <bean id="NonLoginUserService" class="kr.or.annapharm.service.NonLoginUserServiceImpl"
+   		p:patientDAO-ref="patientDAO"
+   />
+
+</beans>
+

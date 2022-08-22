@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Menu-Mapper">
+	<select id="selectUserMenu" resultType="menu">
+		select *
+		from menu
+		where m_Code like 'U'||'%' and isNav=1
+		order by m_Code asc
+	</select>
+
+	<select id="selectDoctorMenu" resultType="menu">
+		select *
+		from menu
+		where m_Code like 'D'||'%' and isNav=1
+		order by m_Code asc
+	</select>
+
+	<select id="selectChemistMenu" resultType="menu">
+		select *
+		from menu
+		where m_Code like 'C'||'%' and isNav=1
+		order by m_Code asc
+	</select>
+
+
+	<select id="selectSubMenu" resultType="menu">
+		select *
+		from menu
+		where up_Code = #{mCode} and isNav=1
+	</select>
+
+	<select id="selectMenuByMcode" resultType="menu">
+		select *
+		from menu
+		where m_Code = #{mCode}
+	</select>
+	<select id="selectMenuByMname" resultType="menu">
+		select *
+		from menu
+		where m_Name = #{mName}
+	</select>
+
+
+
+	<!-- 상단메뉴 -->
+
+	<select id ="selectMainMenu" resultType="menu"  parameterType="String">
+      SELECT *
+      FROM MENU
+      WHERE 1 =1
+         AND USE_YN ='Y'
+         AND DEPTH = 1
+         AND M_CODE like #{mCode}||'%'
+      ORDER BY TO_NUMBER(SORT_NO) ASC
+   </select>
+
+   <select id ="selectSubMenu2" resultType="menu">
+ 	SELECT  *
+      FROM MENU
+      WHERE 1 = 1
+         AND USE_YN ='Y'
+         AND ISNAV = 0
+      ORDER BY TO_NUMBER(SORT_NO) ASC
+   </select>
+
+
+
+
+</mapper>
+
+
+

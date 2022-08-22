@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ExpertDashBoard-Mapper">
+
+
+
+
+	<select id="runtimeSelectPatientList" resultType="map" parameterType="member">
+
+		select ps_code
+		     , TO_CHAR(ps_date, 'YYYY/MM/DD') as ps_date
+		     , ps_status
+		     , hospital_name
+		     , mem_name
+             , chemist_code
+             , ps_type
+        from ((select a.ps_code
+                     , a.ps_date
+                     , a.ps_status
+                     , b.hospital_name
+                     , c.mem_name
+                     , d.chemist_code
+                     , a.ps_complete_date
+                     , a.ps_type
+                  from prescription a, doctor b, member c, CHEMIST d
+                 where
+                     a.doctor_code = b.doctor_code
+                   and b.mem_id = c.mem_id
+                   and a.CHEMIST_CODE = d.CHEMIST_CODE
+                   and d.MEM_ID = #{memId}
+                   and a.ps_status = '조제대기'
+                   and TO_CHAR(a.ps_complete_date) = TO_CHAR(SYSDATE))
+                union
+               (select a.ps_code
+                     , a.ps_date
+                     , a.ps_status
+                     , b.hospital_name
+                     , c.mem_name
+                     , d.chemist_code
+					 , a.ps_complete_date
+					 , a.ps_type
+                  from prescription a, doctor b, member c, CHEMIST d
+                 where
+                     a.doctor_code = b.doctor_code
+                   and b.mem_id = c.mem_id
+                   and a.CHEMIST_CODE = d.CHEMIST_CODE
+                   and d.MEM_ID = #{memId}
+                   and a.ps_status = '조제완료'
+                   and TO_CHAR(a.ps_complete_date) = TO_CHAR(SYSDATE)))e
+        where ROWNUM <![CDATA[ <= ]]> 10
+        ORDER BY e.ps_complete_date DESC, e.ps_status ASC
+
+	</select>
+
+
+
+	<select id="selectPharmacistINList" resultType="map">
+		select CHEMIST_IN_CODE
+				,PATIENT_CODE
+				,CHEMIST_IN_TITLE
+				,TO_CHAR(CHEMIST_IN_DATE, 'YYYY/MM/DD') as CHEMIST_IN_DATE
+				,CHEMIST_IN_CONTENT
+				,CHEMIST_IN_VIEWCNT
+				,CHEMIST_IN_TYPE
+				,CHEMIST_IN_WRITER
+			from CHE_IN
+	     where ROWNUM <![CDATA[ <= ]]> 5
+	        	ORDER BY CHEMIST_IN_DATE DESC
+	</select>
+
+	<select id="selectCumulativeStockList" resultType="map" parameterType="string">
+	  	   SELECT B.MD_NAME
+               ,TO_CHAR(C.RECEIVE_LASTDATE, 'YYYY/MM/DD') as RECEIVE_LASTDATE
+               ,D.RECEIVE_CART_NUM
+               ,A.PRODUCT_OWNNUM
+            FROM RECEIVE C
+            LEFT OUTER JOIN RECEIVE_CART D ON D.RECEIVE_NO = C.RECEIVE_NO
+            LEFT OUTER JOIN MEDICINE B ON B.MD_NO = D.MD_NO
+            LEFT OUTER JOIN PRODUCT A ON A.MD_NO = B.MD_NO
+        WHERE ROWNUM <![CDATA[ <= ]]> 6
+             AND NOT D.RECEIVE_NO is NULL
+             AND C.PHARMACY_CODE = ANY (SELECT PHARMACY_CODE FROM CHEMIST WHERE MEM_ID = #{memId})
+        ORDER BY C.RECEIVE_LASTDATE DESC
+
+	</select>
+	
+	<sql id="maximumsaleDate">
+		<if test="startDate eq 'month'.toString()">
+			 AND C.SALE_DATE BETWEEN SYSDATE-30 AND SYSDATE
+		</if>
+		<if test="startDate == 'week'.toString()">
+			 AND C.SALE_DATE BETWEEN SYSDATE-7 AND SYSDATE
+		</if>
+		<if test="startDate == 'today'.toString()">
+			 AND C.SALE_DATE BETWEEN TO_DATE(TO_CHAR(SYSDATE,'YYYYMMDD')) AND SYSDATE
+		</if>
+		<if test="startDate == 'yesterday'.toString()">
+			 AND C.SALE_DATE BETWEEN TO_DATE(TO_CHAR(SYSDATE-1,'YYYYMMDD')) AND SYSDATE-1
+		</if>
+	</sql>
+	
+	<select id="selectMaximumSalesList" resultType="kr.or.annapharm.dto.PreferMedicineVO">
+		SELECT B.MD_NAME
+			 , SUM(A.SALE_CART_PRICE) AS PRICE
+	      FROM SALE_CART A, MEDICINE B, SALE C
+	     WHERE A.MD_NO = B.MD_NO
+	       AND C.SALE_NO = A.SALE_NO
+	       AND c.sale_date BETWEEN to_date(#{startDate}) and to_date(#{endDate})
+	       <![CDATA[and ROWNUM <= 5]]>
+	     GROUP BY B.MD_NAME
+	     ORDER BY PRICE DESC		
+	</select>
+	
+	<select id="selectSalesStatistics" resultType="kr.or.annapharm.dto.PreferMedicineVO">
+		select ROWNUM as rank, MD_NAME, AGE,SEX, NUM
+		from
+		(
+		select
+		rownum
+		,a.age
+		,a.sex
+		,a.md_name
+		,a.mi_company
+		,a.md_class
+		,a.num
+		,a.price
+		,nvl(p.num,0) as ownnum
+		from
+		  (SELECT c.age
+		        ,c.sex
+		        ,e.md_no
+		        ,f.md_name
+		        ,f.MD_CLASS
+		        ,G.MI_COMPANY
+		        ,g.mi_price AS price
+		        ,sum(e.sale_cart_num) as num
+		      FROM
+		        (SELECT
+		            trunc(to_number(TO_CHAR(SYSDATE,'yyyy') + 1 - (substr(patient_regnum,0,2) + (
+		               CASE
+		               	   <![CDATA[when substr(patient_regnum,8,1) < 3  then 1900
+		                     when substr(patient_regnum,8,1) >= 3 then 2000]]>
+		               END
+		            ) ) ) / 10) * 10 AS age
+		           , (
+		               CASE
+		                  WHEN substr(patient_regnum,8,1) = '1'
+		                       OR substr(patient_regnum,8,1) = '3' THEN '남성'
+		                  ELSE '여성'
+		               END
+		            ) AS sex
+		            , PATIENT_CODE
+		      from patient) c
+		        ,sale d
+		        ,SALE_CART e
+		        ,MEDICINE f
+		        ,MEDICINE_INFO g
+		      WHERE
+		         c.patient_code = d.patient_code
+		         and f.mi_code = g.mi_code
+		         and f.md_no = e.md_no
+		         AND d.sale_date BETWEEN to_date(#{startDate}) and sysdate
+		         and D.SALE_NO = E.SALE_NO
+		    GROUP BY e.md_no,f.md_class,g.mi_company,f.md_name,c.age,c.sex,g.mi_price ) a
+		   ,
+		  (select md_no
+		   ,sum(PRODUCT_OWNNUM) as num
+		   from PRODUCT
+		   GROUP BY md_no)p
+		  where p.md_NO(+) = A.MD_NO
+		  order by a.num desc, A.PRICE DESC)
+		  <![CDATA[where ROWNUM <= 5]]>
+		  
+	</select>
+	
+	<select id="analysisPrescription" resultType="kr.or.annapharm.dto.AnalysisPrescriptionVO">
+		select age
+		     , sum(decode(a.sex,'남성',visits)) as male
+		     , sum(decode(a.sex,'여성',visits)) as female
+		from   
+		(select sex, age
+		     , sum(visits) as visits
+		from
+		(SELECT
+		   z.age
+		  ,z.sex
+		  ,nvl(y.visits,0) visits
+		FROM
+		   (
+		      SELECT
+		         a.age
+		        ,b.sex
+		      FROM
+		         (
+		            SELECT
+		               (level-1) * 10 age
+		            FROM
+		               dual
+		            CONNECT BY
+		               <![CDATA[level < 10]]>
+		         ) a
+		        , (
+		            SELECT
+		               '남성' sex
+		            FROM
+		               dual
+		            UNION ALL
+		            SELECT
+		               '여성' sex
+		            FROM
+		               dual
+		         ) b
+		   ) z
+		  , (
+		    SELECT c.age
+		       , c.sex
+		       , count(*) as visits
+		    FROM
+		        (SELECT
+		            trunc(to_number(TO_CHAR(SYSDATE,'yyyy') + 1 - (substr(patient_regnum,0,2) + (
+		               CASE
+		                   <![CDATA[when substr(patient_regnum,8,1) < 3  then 1900
+		                     when substr(patient_regnum,8,1) >= 3 then 2000]]>
+		               END
+		            ) ) ) / 10) * 10 AS age
+		           , (
+		               CASE
+		                  WHEN substr(patient_regnum,8,1) = '1'
+		                       OR substr(patient_regnum,8,1) = '3' THEN '남성'
+		                  ELSE '여성'
+		               END
+		            ) AS sex
+		            , PATIENT_CODE
+		      from patient) c
+		        ,sale d
+		        ,SALE_CART e
+		      WHERE
+		         c.patient_code = d.patient_code
+		         AND d.sale_date BETWEEN to_date(#{startDate}) and sysdate
+		         and D.SALE_NO = E.SALE_NO
+		    GROUP BY c.age,c.sex  
+		   ) y
+		WHERE
+		   z.age = y.age (+)
+		   AND z.sex = y.sex (+)
+		order by z.age ,z.sex)
+		group by sex,age) a
+		group by a.age
+		order by age
+	</select>
+	
+	<select id="stockShortage" resultType="kr.or.annapharm.dto.DashBoardProductVO">
+		SELECT * 
+		  FROM(
+		  SELECT MD_NAME
+		       , OWNNUM 
+		       <![CDATA[, CASE WHEN (OWNNUM - POS) < 0 THEN '긴급'
+		              WHEN (OWNNUM - POS) <= 30 THEN '주의']]>
+		              ELSE '정상' END AS STATUS
+		       , (OWNNUM - POS) AS GUBUN
+		    FROM (SELECT B.MD_NAME
+		               , A.PRODUCT_OWNNUM_STANDARD AS POS
+		               , SUM(A.PRODUCT_OWNNUM) AS OWNNUM
+		           FROM PRODUCT A, MEDICINE B
+		          WHERE A.MD_NO = B.MD_NO
+		          GROUP BY A.PRODUCT_OWNNUM_STANDARD, B.MD_NAME)
+		   ORDER BY GUBUN)
+		   <![CDATA[WHERE ROWNUM <= 6]]>
+	</select>
+	
+	<select id="stockEXP" resultType="kr.or.annapharm.dto.DashBoardProductVO">
+		SELECT * 
+	      FROM(
+	      SELECT MD_NAME
+	           , OWNNUM
+	           <![CDATA[, CASE WHEN (TO_DATE(TO_CHAR(MIN,'YYYY-MM-DD'))- TO_DATE(TO_CHAR(SYSDATE,'YYYY-MM-DD'))) <= 7 THEN '긴급'
+	                  WHEN (TO_DATE(TO_CHAR(MIN,'YYYY-MM-DD'))- TO_DATE(TO_CHAR(SYSDATE,'YYYY-MM-DD'))) <= 30 THEN '주의']]>
+	                  ELSE '정상' END AS STATUS
+	           , (TO_DATE(TO_CHAR(MIN,'YYYY-MM-DD'))- TO_DATE(TO_CHAR(SYSDATE,'YYYY-MM-DD'))) AS GUBUN
+	        FROM (SELECT B.MD_NAME
+	                   , SUM(A.PRODUCT_OWNNUM) AS OWNNUM
+	                   , MIN(A.PRODUCT_DATE) AS MIN
+	               FROM PRODUCT A, MEDICINE B
+	              WHERE A.MD_NO = B.MD_NO
+	              GROUP BY B.MD_NAME)
+	       ORDER BY GUBUN)
+	       <![CDATA[WHERE ROWNUM <= 8]]>
+	
+	</select>
+	
+</mapper>
+
+
